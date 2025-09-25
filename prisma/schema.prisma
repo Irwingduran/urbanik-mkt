@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  role      Role     @default(USER)
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User specific fields
+  profile   UserProfile?
+  orders    Order[]
+  reviews   Review[]
+  wishlist  WishlistItem[]
+  addresses Address[]
+  paymentMethods PaymentMethod[]
+
+  // Vendor specific fields
+  vendor    Vendor?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  firstName   String?
+  lastName    String?
+  phone       String?
+  birthDate   DateTime?
+  bio         String?
+  
+  // Sustainability preferences
+  sustainabilityFocus String[]
+  preferredCategories String[]
+  priceRange         String?
+  
+  // Notifications
+  notifyNewProducts  Boolean @default(true)
+  notifyPriceAlerts  Boolean @default(true)
+  notifyOrderUpdates Boolean @default(true)
+  notifySustainability Boolean @default(true)
+  notifyMarketing    Boolean @default(false)
+  
+  // Gamification
+  regenScore         Int     @default(0)
+  loyaltyPoints      Int     @default(0)
+  nftsCollected      Json[]  @default([])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  companyName String
+  description String?
+  website     String?
+  phone       String?
+  logo        String?
+  coverImage  String?
+  
+  // Company details
+  founded     String?
+  employees   String?
+  location    String?
+  
+  // Sustainability metrics
+  regenScore  Int      @default(0)
+  nftLevel    String   @default("Semilla Verde")
+  
+  // Business metrics
+  totalProducts Int    @default(0)
+  totalSales    Int    @default(0)
+  monthlyRevenue Float @default(0)
+  
+  // Relations
+  products    Product[]
+  orders      Order[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String
+  price       Float
+  originalPrice Float?
+  sku         String   @unique
+  category    String
+  
+  // Images
+  images      String[]
+  
+  // Stock
+  stock       Int      @default(0)
+  minStock    Int      @default(5)
+  inStock     Boolean  @default(true)
+  
+  // Sustainability
+  regenScore  Int      @default(0)
+  certifications String[]
+  
+  // Environmental metrics
+  co2Reduction    Float @default(0)
+  waterSaving     Float @default(0)
+  energyEfficiency Float @default(0)
+  
+  // NFTs
+  nfts        Json[]   @default([])
+  
+  // Status
+  featured    Boolean  @default(false)
+  active      Boolean  @default(true)
+  
+  // Relations
+  orderItems  OrderItem[]
+  reviews     Review[]
+  wishlistItems WishlistItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  vendorId    String
+  vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  
+  status      OrderStatus @default(PENDING)
+  total       Float
+  subtotal    Float
+  tax         Float       @default(0)
+  shipping    Float       @default(0)
+  
+  // Shipping info
+  shippingAddress Json
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  actualDelivery    DateTime?
+  
+  // Payment
+  paymentMethod   String
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripePaymentId String?
+  
+  // Relations
+  items       OrderItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Float
+  total     Float
+  
+  createdAt DateTime @default(now())
+
+  @@map("order_items")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  rating    Int      // 1-5
+  comment   String?
+  verified  Boolean  @default(false)
+  helpful   Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  
+  type      String  // home, work, other
+  name      String
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String  @default("México")
+  isDefault Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("addresses")
+}
+
+model PaymentMethod {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  
+  type      String  // card, paypal, etc
+  brand     String? // visa, mastercard, etc
+  last4     String?
+  expiryMonth Int?
+  expiryYear  Int?
+  isDefault Boolean @default(false)
+  
+  stripePaymentMethodId String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_methods")
+}
+
+enum Role {
+  USER
+  VENDOR
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
