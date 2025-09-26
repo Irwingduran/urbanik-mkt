@@ -1,18 +1,14 @@
 "use client"
 
-import { useState, useMemo, Suspense } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Grid3X3, List, X, SlidersHorizontal } from "lucide-react"
+import { Search, Grid3X3, List, X, SlidersHorizontal, Sparkles, Target, Users, Zap } from "lucide-react"
 import { ProductCard } from "@/components/marketplace/product-card"
 import { MarketplaceFilters } from "@/components/marketplace/marketplace-filters"
-// New modular components
-import { ProductCard as ModularProductCard } from "@/src/features/products/components/ProductCard"
-import { LoadingSpinner } from "@/src/shared/components/feedback/LoadingSpinner"
-import { ErrorBoundary } from "@/src/shared/components/feedback/ErrorBoundary"
-import { CartCounter } from "@/src/features/cart/components/CartCounter"
+import { EnhancedNavbar } from "@/components/layout/enhanced-navbar"
 
 // Mock products data
 const productsData = [
@@ -164,10 +160,31 @@ const productsData = [
   },
 ]
 
+// NUEVO: Mock para proyectos comunitarios
+const communityProjects = [
+  {
+    id: 1,
+    name: "Reforestación Bosque Urbano",
+    progress: 75,
+    target: 50000, // $50,000 MXN
+    contributors: 1245,
+    impact: "10,000 árboles nativos"
+  },
+  {
+    id: 2,
+    name: "Instalación Paneles Solares Comunitarios",
+    progress: 30,
+    target: 200000,
+    contributors: 892,
+    impact: "100 kW de energía limpia"
+  }
+]
+
 export default function Marketplace() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchTerm, setSearchTerm] = useState("")
   const [showFilters, setShowFilters] = useState(false)
+  const [activeTab, setActiveTab] = useState<"products" | "projects">("products") // NUEVO: Tabs para cambiar vista
   const [filters, setFilters] = useState({
     locations: [] as string[],
     certifications: [] as string[],
@@ -255,236 +272,409 @@ export default function Marketplace() {
     setSearchTerm("")
   }
 
+  // NUEVO: Cálculo de impacto en tiempo real
+  const realTimeImpact = useMemo(() => {
+    return filteredProducts.reduce((acc, product) => ({
+      co2Reduced: acc.co2Reduced + (product.metrics?.co2Reduced || 0),
+      waterSaved: acc.waterSaved + (product.metrics?.waterSaved || 0),
+      energyEfficiency: acc.energyEfficiency + (product.metrics?.energyEfficiency || 0),
+    }), { co2Reduced: 0, waterSaved: 0, energyEfficiency: 0 })
+  }, [filteredProducts])
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Marketplace Sostenible</h1>
-          <p className="text-gray-600">Descubre productos eco-friendly que generan impacto positivo</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30">
+      {/* Enhanced Navbar */}
+      <EnhancedNavbar />
 
-        {/* Search and Controls */}
-        <div className="mb-6 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar productos sostenibles..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      {/* Modern Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-blue-500/5 to-purple-500/5"></div>
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(34, 197, 94, 0.05) 0%, transparent 50%),
+                           radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)`
+        }}></div>
+      </div>
 
-            {/* View Controls */}
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="relative">
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filtros
-                {activeFiltersCount > 0 && <Badge className="ml-2 bg-green-600 text-white">{activeFiltersCount}</Badge>}
-              </Button>
-
-              <div className="flex items-center gap-3">
-                <div className="flex border rounded-lg">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="rounded-r-none"
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className="rounded-l-none"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Redux Cart Counter Demo */}
-                <CartCounter />
-              </div>
+      <div className="container mx-auto px-4 py-12">
+        {/* Enhanced Navigation Tabs */}
+        <div className="flex justify-center mb-12">
+          <div className="bg-gray-100 p-1 rounded-xl shadow-inner">
+            <div className="flex gap-1">
+              <button
+                className={`relative px-8 py-4 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === "products"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                }`}
+                onClick={() => setActiveTab("products")}
+              >
+                <span className="relative z-10">Products</span>
+                <Badge className="ml-2 bg-gray-200 text-gray-700 text-xs">
+                  {filteredProducts.length}
+                </Badge>
+              </button>
+              <button
+                className={`relative px-8 py-4 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === "projects"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                }`}
+                onClick={() => setActiveTab("projects")}
+              >
+                <span className="relative z-10">Community Projects</span>
+                <Badge className="ml-2 bg-gray-200 text-gray-700 text-xs">
+                  {communityProjects.length}
+                </Badge>
+              </button>
             </div>
           </div>
-
-          {/* Active Filters */}
-          {activeFiltersCount > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-500">Filtros activos:</span>
-
-              {filters.locations.map((location) => (
-                <Badge key={location} variant="secondary" className="bg-blue-100 text-blue-800">
-                  📍 {location}
-                  <button
-                    onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        locations: prev.locations.filter((l) => l !== location),
-                      }))
-                    }
-                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-
-              {filters.certifications.map((cert) => (
-                <Badge key={cert} variant="secondary" className="bg-green-100 text-green-800">
-                  🏆 {cert}
-                  <button
-                    onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        certifications: prev.certifications.filter((c) => c !== cert),
-                      }))
-                    }
-                    className="ml-1 hover:bg-green-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-
-              {filters.categories.map((category) => (
-                <Badge key={category} variant="secondary" className="bg-purple-100 text-purple-800">
-                  📂 {category}
-                  <button
-                    onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        categories: prev.categories.filter((c) => c !== category),
-                      }))
-                    }
-                    className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-
-              <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                Limpiar todo
-              </Button>
-            </div>
-          )}
         </div>
 
-        <div className="flex gap-6">
-          {/* Filters Sidebar */}
-          {showFilters && (
-            <div className="w-80 flex-shrink-0">
-              <MarketplaceFilters filters={filters} setFilters={setFilters} />
-            </div>
-          )}
+        {/* Content based on active tab */}
+        {activeTab === "products" ? (
+          <>
+            {/* Enhanced Categories */}
+            <div className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">Explore by Category</h2>
+                <p className="text-gray-600">Find sustainable products that match your values</p>
+              </div>
 
-          {/* Products Grid/List */}
-          <div className="flex-1">
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
-                {filteredProducts.length} productos encontrados
-                {searchTerm && ` para "${searchTerm}"`}
-              </p>
-
-              <select className="border rounded-lg px-3 py-2 text-sm">
-                <option>Más relevantes</option>
-                <option>Precio: menor a mayor</option>
-                <option>Precio: mayor a menor</option>
-                <option>REGEN Score más alto</option>
-                <option>Mejor calificados</option>
-                <option>Más recientes</option>
-              </select>
-            </div>
-
-            {/* Products */}
-            {filteredProducts.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron productos</h3>
-                  <p className="text-gray-500 mb-4">Intenta ajustar tus filtros o términos de búsqueda</p>
-                  <Button onClick={clearAllFilters}>Limpiar filtros</Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div
-                className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}
-              >
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} viewMode={viewMode} />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[
+                  { name: 'Energía Solar', icon: '☀️', color: 'from-yellow-500 to-orange-500' },
+                  { name: 'Gestión de Agua', icon: '💧', color: 'from-blue-500 to-cyan-500' },
+                  { name: 'Movilidad Eléctrica', icon: '🔋', color: 'from-green-500 to-emerald-500' },
+                  { name: 'Gestión de Residuos', icon: '♻️', color: 'from-emerald-500 to-green-600' },
+                  { name: 'Iluminación', icon: '💡', color: 'from-amber-500 to-yellow-500' },
+                  { name: 'Calidad del Aire', icon: '🌬️', color: 'from-cyan-500 to-blue-500' }
+                ].map((category) => (
+                  <button
+                    key={category.name}
+                    onClick={() => setFilters(prev => ({
+                      ...prev,
+                      categories: prev.categories.includes(category.name)
+                        ? prev.categories.filter(c => c !== category.name)
+                        : [...prev.categories, category.name]
+                    }))}
+                    className={`group relative p-6 rounded-2xl transition-all duration-300 hover:scale-105 ${
+                      filters.categories.includes(category.name)
+                        ? 'bg-white shadow-lg ring-2 ring-green-500 ring-offset-2'
+                        : 'bg-white/60 hover:bg-white hover:shadow-md'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 bg-gradient-to-br ${category.color} rounded-xl flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
+                      <span className="text-xl">{category.icon}</span>
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 text-center leading-tight">
+                      {category.name}
+                    </div>
+                  </button>
                 ))}
               </div>
-            )}
+            </div>
 
-            {/* New Modular Architecture Demo */}
-            {filteredProducts.length > 0 && (
-              <div className="mt-12">
-                <div className="border-t border-gray-200 pt-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      New Modular Architecture Demo
-                    </h2>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Feature Preview
-                    </Badge>
+            {/* Enhanced Search and Controls */}
+            <div className="mb-8">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Advanced Search */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Input
+                        placeholder="Search sustainable products, brands, or impact metrics..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-12 h-12 text-base border-gray-200 focus:border-green-500 focus:ring-green-500/20 rounded-xl"
+                      />
+                    </div>
                   </div>
-                  <p className="text-gray-600 mb-6">
-                    Showcasing the new feature-based modular architecture with enhanced components
-                  </p>
 
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingSpinner size="lg" />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredProducts.slice(0, 3).map((product) => {
-                          // Convert the existing product format to our new format
-                          const modularProduct = {
-                            ...product,
-                            id: String(product.id),
-                            vendorId: 'vendor1',
-                            stock: 25,
-                            active: true,
-                            co2Reduction: product.co2Reduction || 1.5,
-                            waterSaving: product.waterSaving || 500,
-                            energyEfficiency: product.energyEfficiency || 85,
-                            vendor: {
-                              id: 'vendor1',
-                              companyName: 'EcoTech Solutions',
-                              user: { name: 'Demo Vendor' }
-                            },
-                            averageRating: product.rating || 4.5,
-                            reviewCount: product.reviews || 25,
-                            totalSold: 150,
-                            isInWishlist: false,
-                            createdAt: new Date().toISOString()
-                          }
+                  {/* Enhanced Controls */}
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="relative h-12 px-6 border-gray-200 hover:border-green-300 rounded-xl"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 mr-2" />
+                      Filters
+                      {activeFiltersCount > 0 && (
+                        <Badge className="ml-2 bg-green-500 text-white min-w-[1.25rem] h-5">
+                          {activeFiltersCount}
+                        </Badge>
+                      )}
+                    </Button>
 
-                          return (
-                            <ModularProductCard
-                              key={`modular-${product.id}`}
-                              product={modularProduct}
-                              variant="default"
-                              showActions={true}
-                              onAddToCart={() => console.log('Modular: Add to cart:', product.id)}
-                              onToggleWishlist={() => console.log('Modular: Toggle wishlist:', product.id)}
-                            />
-                          )
-                        })}
-                      </div>
-                    </Suspense>
-                  </ErrorBoundary>
+                    <div className="flex bg-gray-100 rounded-xl p-1">
+                      <Button
+                        variant={viewMode === "grid" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode("grid")}
+                        className={`rounded-lg transition-all ${viewMode === "grid" ? 'bg-white shadow-sm' : 'hover:bg-white/50'}`}
+                      >
+                        <Grid3X3 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === "list" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode("list")}
+                        className={`rounded-lg transition-all ${viewMode === "list" ? 'bg-white shadow-sm' : 'hover:bg-white/50'}`}
+                      >
+                        <List className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+
+              {/* Enhanced Active Filters */}
+              {activeFiltersCount > 0 && (
+                <div className="mt-6 bg-gradient-to-r from-blue-50/50 to-green-50/50 rounded-2xl p-4 border border-blue-100/50">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                    </div>
+
+                    {filters.locations.map((location) => (
+                      <Badge key={location} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 rounded-full px-3 py-1">
+                        <span>📍 {location}</span>
+                        <button
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              locations: prev.locations.filter((l) => l !== location),
+                            }))
+                          }
+                          className="ml-2 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+
+                    {filters.certifications.map((cert) => (
+                      <Badge key={cert} className="bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 rounded-full px-3 py-1">
+                        <span>🏆 {cert}</span>
+                        <button
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              certifications: prev.certifications.filter((c) => c !== cert),
+                            }))
+                          }
+                          className="ml-2 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+
+                    {filters.categories.map((category) => (
+                      <Badge key={category} className="bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 rounded-full px-3 py-1">
+                        <span>{category}</span>
+                        <button
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              categories: prev.categories.filter((c) => c !== category),
+                            }))
+                          }
+                          className="ml-2 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllFilters}
+                      className="ml-auto bg-white/80 hover:bg-white border-gray-200 rounded-full px-4 py-1 text-sm font-medium transition-all hover:shadow-sm"
+                    >
+                      Clear all ✨
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-6">
+              {/* Filters Sidebar */}
+              {showFilters && (
+                <div className="w-80 flex-shrink-0">
+                  <MarketplaceFilters filters={filters} setFilters={setFilters} />
+                </div>
+              )}
+
+              {/* Enhanced Products Section */}
+              <div className="flex-1">
+                {/* Modern Results Header */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">
+                        {filteredProducts.length} Sustainable Products
+                      </h3>
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        {searchTerm ? (
+                          <span>Results for "{searchTerm}" • Transforming the planet</span>
+                        ) : (
+                          <span>Curated eco-friendly solutions • Making impact accessible</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="font-medium">Sort by:</span>
+                        <select className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                          <option>🔥 Most Relevant</option>
+                          <option>💰 Price: Low to High</option>
+                          <option>💎 Price: High to Low</option>
+                          <option>🌱 Highest REGEN Score</option>
+                          <option>⭐ Best Rated</option>
+                          <option>🆕 Newest First</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Empty State */}
+                {filteredProducts.length === 0 ? (
+                  <div className="bg-gradient-to-br from-gray-50 to-green-50/30 rounded-3xl border-2 border-dashed border-gray-200 p-16 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Search className="w-12 h-12 text-green-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">No products found</h3>
+                      <p className="text-gray-600 mb-8 leading-relaxed">
+                        Don't worry! Try adjusting your filters or search terms to discover amazing sustainable products.
+                      </p>
+                      <Button
+                        onClick={clearAllFilters}
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl px-8 py-3 font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                      >
+                        ✨ Clear filters and explore
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Enhanced Featured Banner */}
+                    {filteredProducts.some(p => p.featured) && (
+                      <div className="bg-gradient-to-r from-green-500/10 via-green-400/10 to-emerald-500/10 border border-green-200 rounded-2xl p-6 mb-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-400/20 to-transparent rounded-full -mr-16 -mt-16"></div>
+                        <div className="relative flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-bold text-green-900 mb-1 flex items-center gap-2">
+                              <span className="text-xl">⭐</span>
+                              Featured Products
+                            </h3>
+                            <p className="text-green-700">Hand-picked by our sustainability experts</p>
+                          </div>
+                          <Badge className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300 px-3 py-1">
+                            {filteredProducts.filter(p => p.featured).length} featured
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enhanced Products Grid */}
+                    <div className={
+                      viewMode === "grid"
+                        ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"
+                        : "space-y-6"
+                    }>
+                      {filteredProducts.map((product, index) => (
+                        <div
+                          key={product.id}
+                          className="group animate-fade-in-up opacity-0"
+                          style={{
+                            animationDelay: `${index * 100}ms`,
+                            animationFillMode: 'forwards'
+                          }}
+                        >
+                          <ProductCard
+                            product={product}
+                            viewMode={viewMode}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* NUEVO: Vista de Proyectos Comunitarios */
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Proyectos Comunitarios</h2>
+              <p className="text-gray-600">Tu compra contribuye automáticamente a estos proyectos</p>
+            </div>
+
+            <div className="grid gap-6">
+              {communityProjects.map((project) => (
+                <Card key={project.id} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="md:flex">
+                      <div className="md:w-2/3 p-6">
+                        <h3 className="text-xl font-semibold mb-2">{project.name}</h3>
+                        <p className="text-gray-600 mb-4">Impacto: {project.impact}</p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Progreso de financiamiento</span>
+                              <span>{project.progress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                style={{ width: `${project.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <div className="font-medium">{project.contributors.toLocaleString()}</div>
+                              <div className="text-gray-500">Contribuyentes</div>
+                            </div>
+                            <div>
+                              <div className="font-medium">${project.target.toLocaleString()} MXN</div>
+                              <div className="text-gray-500">Meta total</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="md:w-1/3 bg-green-50 p-6 flex flex-col justify-center">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600 mb-2">
+                            ${Math.round(project.target * project.progress / 100).toLocaleString()} MXN
+                          </div>
+                          <div className="text-green-700">Recaudado</div>
+                          <Button className="w-full mt-4" size="sm">
+                            Contribuir directamente
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
