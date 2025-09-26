@@ -110,7 +110,7 @@ export default function Completion({ userType, formData }: CompletionProps) {
           </Button>
         </div>
 
-        <Link href={isVendor ? "/dashboard/vendor" : "/dashboard"}>
+        <Link href="/dashboard">
           <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-12">
             Ir al Dashboard
             <ArrowRight className="w-5 h-5 ml-2" />
