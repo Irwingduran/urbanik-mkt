@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       take: limit ? parseInt(limit) : undefined
     })
 
-    const transformedProducts = products.map(product => ({
+    const transformedProducts = products.map((product: typeof products[0]) => ({
       id: product.id,
       name: product.name,
       description: product.description,
