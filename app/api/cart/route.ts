@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const transformedCartItems = cartItems.map(item => ({
+    const transformedCartItems = cartItems.map((item: typeof cartItems[0]) => ({
       id: item.id,
       productId: item.product.id,
       name: item.product.name,
