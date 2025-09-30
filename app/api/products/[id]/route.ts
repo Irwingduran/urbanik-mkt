@@ -96,7 +96,7 @@ export async function GET(
         name: product.vendor.user.name,
         email: product.vendor.user.email
       },
-      reviews: product.reviews.map(review => ({
+      reviews: product.reviews.map((review: typeof product.reviews[0]) => ({
         id: review.id,
         rating: review.rating,
         comment: review.comment,
