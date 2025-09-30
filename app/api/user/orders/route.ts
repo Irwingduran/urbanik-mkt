@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate environmental impact for each order
     const ordersWithImpact = await Promise.all(
-      orders.map(async (order) => {
+      orders.map(async (order: typeof orders[0]) => {
         // Calculate total environmental impact
-        const environmentalImpact = order.items.reduce((acc, item) => {
+        const environmentalImpact = order.items.reduce((acc: {co2Saved: number, waterSaved: number, energyGenerated: number}, item: typeof order.items[0]) => {
           const product = item.product
           return {
             co2Saved: acc.co2Saved + (product.co2Reduction * item.quantity),
