@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate average rating and enhance data
-    const enhancedProducts = products.map(product => ({
+    const enhancedProducts = products.map((product: any) => ({
       id: product.id,
       name: product.name,
       description: product.description,
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       energyEfficiency: product.energyEfficiency,
       vendor: product.vendor,
       averageRating: product.reviews.length > 0
-        ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+        ? product.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / product.reviews.length
         : 0,
       reviewCount: product._count.reviews,
       totalSold: product._count.orderItems,
@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
         hasPrev: page > 1
       },
       filters: {
-        categories: categories.map(c => c.category),
+        categories: categories.map((c: any) => c.category),
         maxPrice: maxPriceData._max.price || 0,
         certifications: uniqueCertifications
       }

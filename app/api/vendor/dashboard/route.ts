@@ -157,9 +157,9 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate total quantity sold for top products
-    const topProductsWithSales = topProducts.map(product => ({
+    const topProductsWithSales = topProducts.map((product: any) => ({
       ...product,
-      totalSold: product.orderItems.reduce((sum, item) => sum + item.quantity, 0)
+      totalSold: product.orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
     })).sort((a, b) => b.totalSold - a.totalSold)
 
     // Get vendor profile info

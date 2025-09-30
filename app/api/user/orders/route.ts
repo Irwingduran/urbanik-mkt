@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get products and validate availability
-    const productIds = items.map(item => item.productId)
+    const productIds = items.map((item: any) => item.productId)
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Group items by vendor (for multi-vendor support)
-    const itemsByVendor = items.reduce((acc, item) => {
+    const itemsByVendor = items.reduce((acc: Record<string, any[]>, item: any) => {
       const product = products.find(p => p.id === item.productId)!
       const vendorId = product.vendorId
 
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     // Create orders (one per vendor)
     const createdOrders = await Promise.all(
       Object.entries(itemsByVendor).map(async ([vendorId, vendorItems]) => {
-        const subtotal = (vendorItems as any[]).reduce((sum, item) => sum + item.total, 0)
+        const subtotal = (vendorItems as any[]).reduce((sum: number, item: any) => sum + item.total, 0)
         const shipping = 10.00 // Fixed shipping for now
         const tax = subtotal * 0.10 // 10% tax
         const total = subtotal + shipping + tax
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
             paymentMethod,
             paymentStatus: "PENDING",
             items: {
-              create: (vendorItems as any[]).map(item => ({
+              create: (vendorItems as any[]).map((item: any) => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
 
         // Update product stock
         await Promise.all(
-          (vendorItems as any[]).map(item =>
+          (vendorItems as any[]).map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
     )
 
     // Update user profile with sustainability points
-    const totalRegenScore = items.reduce((sum, item) => {
+    const totalRegenScore = items.reduce((sum: number, item: any) => {
       const product = products.find(p => p.id === item.productId)!
       return sum + (product.regenScore * item.quantity)
     }, 0)

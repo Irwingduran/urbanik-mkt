@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
         })
 
         await Promise.all(
-          orderItems.map(item =>
+          orderItems.map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {

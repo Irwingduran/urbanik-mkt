@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     // Create orders (one per vendor) but with PENDING status
     const createdOrders = await Promise.all(
       Object.entries(itemsByVendor).map(async ([vendorId, vendorItems]) => {
-        const subtotal = (vendorItems as any[]).reduce((sum, item) => sum + item.total, 0)
+        const subtotal = (vendorItems as any[]).reduce((sum: number, item: any) => sum + item.total, 0)
         const shipping = grandSubtotal > 500 ? 0 : Math.round(99 * (subtotal / grandSubtotal)) // Proportional shipping
         const tax = subtotal * 0.16
         const total = subtotal + shipping + tax
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
             paymentStatus: "PENDING",
             stripePaymentId: paymentIntent.id,
             items: {
-              create: (vendorItems as any[]).map(item => ({
+              create: (vendorItems as any[]).map((item: any) => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
 
         // Reserve stock (decrement temporarily)
         await Promise.all(
-          (vendorItems as any[]).map(item =>
+          (vendorItems as any[]).map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     // Create initial notifications (payment pending)
     await Promise.all(
-      createdOrders.map(order =>
+      createdOrders.map((order: any) =>
         prisma.notification.create({
           data: {
             userId: session.user.id,

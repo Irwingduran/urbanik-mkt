@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
           currentMonth: currentMonthStats._count.id || 0,
           lastMonth: lastMonthStats._count.id || 0,
           growth: orderGrowth,
-          statusDistribution: statusDistribution.map(item => ({
+          statusDistribution: statusDistribution.map((item: any) => ({
             status: item.status,
             count: item._count.status,
             revenue: item._sum.total || 0

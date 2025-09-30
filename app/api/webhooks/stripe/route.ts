@@ -138,7 +138,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
         // Update product sales count
         await Promise.all(
-          order.items.map(item =>
+          order.items.map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -150,7 +150,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
         )
 
         // Clear user's cart items for products in this order
-        const productIds = order.items.map(item => item.productId)
+        const productIds = order.items.map((item: any) => item.productId)
         await prisma.cartItem.deleteMany({
           where: {
             userId: order.userId,
@@ -233,7 +233,7 @@ async function handlePaymentFailed(paymentIntent: any) {
 
         // Restore product stock
         await Promise.all(
-          order.items.map(item =>
+          order.items.map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -306,7 +306,7 @@ async function handlePaymentCanceled(paymentIntent: any) {
 
         // Restore stock
         await Promise.all(
-          order.items.map(item =>
+          order.items.map((item: any) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -362,7 +362,7 @@ async function handleChargeDispute(charge: any) {
 
     // Create notifications for vendors about the dispute
     await Promise.all(
-      orders.map(order =>
+      orders.map((order: any) =>
         prisma.notification.create({
           data: {
             userId: order.vendor.user.id,
