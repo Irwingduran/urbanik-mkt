@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { CheckoutData } from '@/app/checkout/page'
 
 interface CartItem {
@@ -392,7 +393,7 @@ export function ConfirmationStep({
             <Checkbox
               id="terms"
               checked={agreedToTerms}
-              onCheckedChange={setAgreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
               className="mt-0.5"
             />
             <div>
@@ -418,7 +419,7 @@ export function ConfirmationStep({
             <Checkbox
               id="newsletter"
               checked={subscribedToNews}
-              onCheckedChange={setSubscribedToNews}
+              onCheckedChange={(checked) => setSubscribedToNews(checked === true)}
               className="mt-0.5"
             />
             <div>

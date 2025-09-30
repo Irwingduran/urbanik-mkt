@@ -79,7 +79,7 @@ export default function Header() {
     }
   }
 
-  const getUserInitials = (user: User | null) => {
+  const getUserInitials = (user: User | null | undefined) => {
     if (!user?.name) return 'U'
     return user.name
       .split(' ')

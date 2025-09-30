@@ -73,6 +73,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
             companyName: true,
             user: {
               select: {
+                id: true,
                 name: true,
                 email: true
               }
@@ -85,7 +86,8 @@ async function handlePaymentSuccess(paymentIntent: any) {
               select: {
                 id: true,
                 name: true,
-                vendorId: true
+                vendorId: true,
+                regenScore: true
               }
             }
           }

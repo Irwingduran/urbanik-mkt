@@ -131,7 +131,7 @@ export default function VendorOrdersPage() {
   useEffect(() => {
     if (session?.user.role === 'VENDOR') {
       fetchOrders()
-    } else if (session?.user.role !== 'VENDOR') {
+    } else if (session?.user.role) {
       router.push('/dashboard')
     }
   }, [session, currentPage, statusFilter, timeRange])
@@ -261,7 +261,14 @@ export default function VendorOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <VendorHeader />
+      <VendorHeader vendorData={{
+        name: session?.user?.name || "Vendor",
+        contactName: session?.user?.name || "Vendor",
+        email: session?.user?.email || "vendor@example.com",
+        memberSince: "2024",
+        regenScore: 85,
+        nftLevel: "Verde"
+      }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

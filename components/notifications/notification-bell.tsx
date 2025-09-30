@@ -14,7 +14,7 @@ import {
   Leaf,
   Clock,
   Trash2,
-  MarkAsRead
+  CheckCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -245,7 +245,7 @@ export default function NotificationBell() {
               disabled={loading}
               className="text-xs"
             >
-              <MarkAsRead className="h-3 w-3 mr-1" />
+              <CheckCheck className="h-3 w-3 mr-1" />
               Marcar todas como leídas
             </Button>
           )}
