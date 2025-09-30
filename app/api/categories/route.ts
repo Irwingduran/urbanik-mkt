@@ -22,7 +22,7 @@ export async function GET() {
       }
     })
 
-    const transformedCategories = categories.map(category => ({
+    const transformedCategories = categories.map((category: typeof categories[0]) => ({
       id: category.id,
       name: category.name,
       slug: category.slug,
