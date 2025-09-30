@@ -68,7 +68,7 @@ export async function GET(
     }
 
     // Calculate environmental impact
-    const environmentalImpact = order.items.reduce((acc, item) => {
+    const environmentalImpact = order.items.reduce((acc: {co2Saved: number, waterSaved: number, energyGenerated: number}, item: typeof order.items[0]) => {
       const product = item.product
       return {
         co2Saved: acc.co2Saved + (product.co2Reduction * item.quantity),
@@ -81,7 +81,7 @@ export async function GET(
       ...order,
       environmentalImpact,
       itemCount: order.items.length,
-      totalRegenScore: order.items.reduce((sum, item) =>
+      totalRegenScore: order.items.reduce((sum: number, item: typeof order.items[0]) =>
         sum + (item.product.regenScore * item.quantity), 0
       )
     }
