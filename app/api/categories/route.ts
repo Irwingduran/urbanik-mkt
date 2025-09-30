@@ -28,7 +28,7 @@ export async function GET() {
       slug: category.slug,
       description: category.description,
       icon: category.icon,
-      children: category.children.map(child => ({
+      children: category.children.map((child: typeof category.children[0]) => ({
         id: child.id,
         name: child.name,
         slug: child.slug,
