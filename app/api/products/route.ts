@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
         name: product.vendor.user.name,
         regenScore: product.vendor.regenScore
       },
-      reviews: product.reviews.map(review => ({
+      reviews: product.reviews.map((review: typeof product.reviews[0]) => ({
         id: review.id,
         rating: review.rating,
         comment: review.comment,
