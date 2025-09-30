@@ -133,8 +133,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const pendingOrders = statusCounts.find(s => s.status === "PENDING")?._count?.status || 0
-    const processingOrders = statusCounts.find(s => s.status === "PROCESSING")?._count?.status || 0
+    const pendingOrders = statusCounts.find((s: any) => s.status === "PENDING")?._count?.status || 0
+    const processingOrders = statusCounts.find((s: any) => s.status === "PROCESSING")?._count?.status || 0
 
     const totalPages = Math.ceil(totalCount / limit)
 

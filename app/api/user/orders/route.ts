@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     // Check stock availability
     for (const item of items) {
-      const product = products.find(p => p.id === item.productId)
+      const product = products.find((p: any) => p.id === item.productId)
       if (!product || product.stock < item.quantity) {
         return NextResponse.json(
           { error: `Insufficient stock for product: ${product?.name || 'Unknown'}` },
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
 
     // Group items by vendor (for multi-vendor support)
     const itemsByVendor = items.reduce((acc: Record<string, any[]>, item: any) => {
-      const product = products.find(p => p.id === item.productId)!
+      const product = products.find((p: any) => p.id === item.productId)!
       const vendorId = product.vendorId
 
       if (!acc[vendorId]) {
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
 
     // Update user profile with sustainability points
     const totalRegenScore = items.reduce((sum: number, item: any) => {
-      const product = products.find(p => p.id === item.productId)!
+      const product = products.find((p: any) => p.id === item.productId)!
       return sum + (product.regenScore * item.quantity)
     }, 0)
 
