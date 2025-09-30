@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: regen-marketplace-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: regen123
+      POSTGRES_DB: regen_marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
