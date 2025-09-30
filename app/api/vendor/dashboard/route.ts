@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     const topProductsWithSales = topProducts.map((product: any) => ({
       ...product,
       totalSold: product.orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
-    })).sort((a, b) => b.totalSold - a.totalSold)
+    })).sort((a: any, b: any) => b.totalSold - a.totalSold)
 
     // Get vendor profile info
     const vendorInfo = await prisma.vendor.findUnique({
