@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
     // Extract unique certifications
     const uniqueCertifications = Array.from(
       new Set(
-        certificationOptions.flatMap(p => p.certifications)
+        certificationOptions.flatMap((p: any) => p.certifications)
       )
     )
 
