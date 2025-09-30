@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           ...order,
           environmentalImpact,
           itemCount: order.items.length,
-          totalRegenScore: order.items.reduce((sum, item) =>
+          totalRegenScore: order.items.reduce((sum: number, item: typeof order.items[0]) =>
             sum + (item.product.regenScore * item.quantity), 0
           )
         }
