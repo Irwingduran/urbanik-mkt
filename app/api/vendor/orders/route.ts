@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
         monthlyRevenue: monthlyRevenue._sum.total || 0,
         pendingOrders,
         processingOrders,
-        statusCounts: statusCounts.reduce((acc, item) => {
+        statusCounts: statusCounts.reduce((acc: Record<string, number>, item: any) => {
           acc[item.status] = item._count.status
           return acc
         }, {} as Record<string, number>)
