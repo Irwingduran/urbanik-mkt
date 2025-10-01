@@ -102,7 +102,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
     // Update all orders to PROCESSING status
     await Promise.all(
-      orders.map(async (order) => {
+      orders.map(async (order: any) => {
         // Update order status
         await prisma.order.update({
           where: { id: order.id },
@@ -221,7 +221,7 @@ async function handlePaymentFailed(paymentIntent: any) {
 
     // Update orders to CANCELLED and restore stock
     await Promise.all(
-      orders.map(async (order) => {
+      orders.map(async (order: any) => {
         // Update order status
         await prisma.order.update({
           where: { id: order.id },
@@ -295,7 +295,7 @@ async function handlePaymentCanceled(paymentIntent: any) {
     }
 
     await Promise.all(
-      orders.map(async (order) => {
+      orders.map(async (order: any) => {
         await prisma.order.update({
           where: { id: order.id },
           data: {
