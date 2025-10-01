@@ -163,8 +163,8 @@ async function handlePaymentSuccess(paymentIntent: any) {
     )
 
     // Update user loyalty points (if not already done)
-    const totalRegenScore = orders.reduce((sum, order) =>
-      sum + order.items.reduce((itemSum, item) =>
+    const totalRegenScore = orders.reduce((sum: number, order: any) =>
+      sum + order.items.reduce((itemSum: number, item: any) =>
         itemSum + (item.product.regenScore || 0) * item.quantity, 0
       ), 0
     )
