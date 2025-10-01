@@ -5,7 +5,8 @@ import { prisma } from "./prisma"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
-import { Role } from "@prisma/client"
+// Define Role type manually to avoid import issues
+type Role = 'USER' | 'VENDOR' | 'ADMIN'
 
 // Extended user type with role
 declare module "next-auth" {
