@@ -146,7 +146,7 @@ export default function ProfileSetupPage() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">¡Profile Setup Complete!</h2>
             <p className="text-gray-600 mb-4">
-              Welcome to RegenMarket! Your profile has been set up successfully.
+              Welcome to Urbanika Marketplace! Your profile has been set up successfully.
             </p>
             <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
               <Sparkles className="w-4 h-4" />
@@ -167,7 +167,7 @@ export default function ProfileSetupPage() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to RegenMarket!</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Urbanika Marketplace!</h1>
             <p className="text-gray-600">Let's set up your profile to get personalized recommendations</p>
           </div>
         )}

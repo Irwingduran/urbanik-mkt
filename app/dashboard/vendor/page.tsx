@@ -1,247 +1,254 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSession } from 'next-auth/react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
-  Award,
+  Package,
+  DollarSign,
+  ShoppingCart,
   TrendingUp,
-  AlertCircle,
   Plus,
   BarChart3,
-  Leaf,
-  Star,
-  CheckCircle,
-  Clock,
-  RefreshCw,
-  Bell,
-  Calendar,
   Users,
-} from "lucide-react"
-import VendorHeader from "@/components/dashboard/vendor-header"
-import RegenScoreCard from "@/components/dashboard/regen-score-card"
-import NFTEvolutionCard from "@/components/dashboard/nft-evolution-card"
-import CertificationsPanel from "@/components/dashboard/certifications-panel"
-import RecommendationsPanel from "@/components/dashboard/recommendations-panel"
-import MetricsOverview from "@/components/dashboard/metrics-overview"
-import ActionButtons from "@/components/dashboard/action-buttons"
-
-// Mock data - En producción vendría de la API
-const vendorData = {
-  name: "EcoTech Solutions",
-  contactName: "Juan Pérez",
-  email: "juan@ecotech.com",
-  memberSince: "2024-01-15",
-  regenScore: 78,
-  nftLevel: "Hoja Creciente",
-  totalProducts: 24,
-  totalSales: 156,
-  monthlyRevenue: 12500,
-  certifications: [
-    { name: "ISO 14001", status: "verified" as const, expiryDate: "2025-06-15" },
-    { name: "Energy Star", status: "verified" as const, expiryDate: "2024-12-20" },
-    { name: "LEED Certified", status: "pending" as const, submittedDate: "2024-01-10" },
-    { name: "Carbon Neutral", status: "expired" as const, expiryDate: "2024-01-01" },
-  ],
-  metrics: {
-    carbonReduction: { value: 245, target: 300, unit: "toneladas CO₂/año" },
-    waterSaving: { value: 125000, target: 150000, unit: "litros/año" },
-    renewableEnergy: { value: 85, target: 100, unit: "%" },
-    wasteReduction: { value: 92, target: 95, unit: "%" },
-  },
-  recentActivity: [
-    { type: "certification", message: "Certificación LEED enviada para revisión", date: "2024-01-10" },
-    { type: "metric", message: "Métricas de agua actualizadas", date: "2024-01-08" },
-    { type: "nft", message: "NFT evolucionó a Hoja Creciente", date: "2024-01-05" },
-  ],
-}
+  Star,
+  Settings,
+  FileText
+} from 'lucide-react'
+import Link from 'next/link'
 
 export default function VendorDashboard() {
-  const [activeTab, setActiveTab] = useState("overview")
+  const { data: session } = useSession()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <VendorHeader vendorData={vendorData} />
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Dashboard Vendedor
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Bienvenido, {session?.user?.name || 'Vendedor'}
+          </p>
+        </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Resumen</TabsTrigger>
-                <TabsTrigger value="metrics">Métricas</TabsTrigger>
-                <TabsTrigger value="certifications">Certificaciones</TabsTrigger>
-                <TabsTrigger value="recommendations">Mejoras</TabsTrigger>
-              </TabsList>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Link href="/dashboard/vendor/products/new">
+            <Button className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+              <Plus className="w-5 h-5" />
+              <span>Crear Producto</span>
+            </Button>
+          </Link>
 
-              <TabsContent value="overview" className="space-y-6">
-                {/* REGEN Score & NFT Cards */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <RegenScoreCard score={vendorData.regenScore} metrics={vendorData.metrics} />
-                  <NFTEvolutionCard score={vendorData.regenScore} />
-                </div>
+          <Link href="/dashboard/vendor/orders">
+            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+              <ShoppingCart className="w-5 h-5" />
+              <span>Ver Órdenes</span>
+            </Button>
+          </Link>
 
-                {/* Quick Stats */}
-                <div className="grid md:grid-cols-3 gap-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Productos Activos</p>
-                          <p className="text-2xl font-bold text-gray-900">{vendorData.totalProducts}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <Leaf className="w-6 h-6 text-green-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+          <Link href="/dashboard/vendor/analytics">
+            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+              <BarChart3 className="w-5 h-5" />
+              <span>Analytics</span>
+            </Button>
+          </Link>
+        </div>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Ventas Totales</p>
-                          <p className="text-2xl font-bold text-gray-900">{vendorData.totalSales}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <BarChart3 className="w-6 h-6 text-blue-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Productos Activos
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">
+                En tu inventario
+              </p>
+            </CardContent>
+          </Card>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Ingresos Mensuales</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            ${vendorData.monthlyRevenue.toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-6 h-6 text-yellow-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Ventas del Mes
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$0</div>
+              <p className="text-xs text-muted-foreground">
+                +0% del mes pasado
+              </p>
+            </CardContent>
+          </Card>
 
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Clock className="w-5 h-5" />
-                      <span>Actividad Reciente</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {vendorData.recentActivity.map((activity, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              activity.type === "certification"
-                                ? "bg-blue-100"
-                                : activity.type === "metric"
-                                  ? "bg-green-100"
-                                  : "bg-yellow-100"
-                            }`}
-                          >
-                            {activity.type === "certification" && <Award className="w-4 h-4 text-blue-600" />}
-                            {activity.type === "metric" && <BarChart3 className="w-4 h-4 text-green-600" />}
-                            {activity.type === "nft" && <Star className="w-4 h-4 text-yellow-600" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-900">{activity.message}</p>
-                            <p className="text-xs text-gray-500">{activity.date}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Órdenes Pendientes
+              </CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">
+                Por procesar
+              </p>
+            </CardContent>
+          </Card>
 
-              <TabsContent value="metrics">
-                <MetricsOverview metrics={vendorData.metrics} />
-              </TabsContent>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Calificación
+              </CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0.0</div>
+              <p className="text-xs text-muted-foreground">
+                0 reseñas
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-              <TabsContent value="certifications">
-                <CertificationsPanel certifications={vendorData.certifications} />
-              </TabsContent>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Orders */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Órdenes Recientes</CardTitle>
+                <Link href="/dashboard/vendor/orders">
+                  <Button variant="ghost" size="sm">Ver Todas</Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-sm text-gray-500">
+                  No tienes órdenes recientes aún.
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Las órdenes aparecerán aquí cuando los clientes compren tus productos.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-              <TabsContent value="recommendations">
-                <RecommendationsPanel
-                  score={vendorData.regenScore}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-4 space-y-6">
-            <ActionButtons />
-
-            {/* Notifications */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Bell className="w-5 h-5" />
-                  <span>Notificaciones</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-yellow-800">Certificación por vencer</p>
-                      <p className="text-xs text-yellow-700">Energy Star vence en 30 días</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Métricas actualizadas</p>
-                      <p className="text-xs text-blue-700">Tus datos de sostenibilidad han sido procesados</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Acciones Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full justify-start bg-transparent" variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Producto
+          {/* Quick Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión Rápida</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Link href="/dashboard/vendor/products">
+                <Button variant="outline" className="w-full justify-start" size="sm">
+                  <Package className="w-4 h-4 mr-2" />
+                  Mis Productos
                 </Button>
-                <Button className="w-full justify-start bg-transparent" variant="outline">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Actualizar Métricas
-                </Button>
-                <Button className="w-full justify-start bg-transparent" variant="outline">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Programar Auditoría
-                </Button>
-                <Button className="w-full justify-start bg-transparent" variant="outline">
+              </Link>
+
+              <Link href="/dashboard/vendor/customers">
+                <Button variant="outline" className="w-full justify-start" size="sm">
                   <Users className="w-4 h-4 mr-2" />
-                  Ver Comunidad
+                  Clientes
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+              </Link>
+
+              <Link href="/dashboard/vendor/reports">
+                <Button variant="outline" className="w-full justify-start" size="sm">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Reportes
+                </Button>
+              </Link>
+
+              <Link href="/dashboard/vendor/settings">
+                <Button variant="outline" className="w-full justify-start" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configuración
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Performance Overview */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Resumen de Rendimiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-gray-700">Productos más vendidos</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">-</span>
+                </div>
+
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-gray-700">Nuevos clientes</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">0</span>
+                </div>
+
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm text-gray-700">Nuevas reseñas</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">0</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm text-gray-700">Tasa de conversión</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">0%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tips Card */}
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
+            <CardHeader>
+              <CardTitle className="text-base">💡 Consejos para Vender</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Sube fotos de alta calidad de tus productos</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Describe detalladamente los beneficios sostenibles</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Responde rápido a las preguntas de los clientes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Mantén tu inventario actualizado</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

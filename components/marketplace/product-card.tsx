@@ -19,8 +19,8 @@ import {
   Plus,
   Minus,
 } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/src/shared/store/hooks"
-import { addItem, updateQuantity, selectCartItemByProductId } from "@/src/shared/store/slices/cartSlice"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { addItem, updateQuantity, selectCartItemByProductId } from "@/lib/store/slices/cartSlice"
 
 interface Product {
   id: string

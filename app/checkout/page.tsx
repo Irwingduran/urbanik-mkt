@@ -22,8 +22,8 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import Header from '@/components/layout/header'
-import { useAppSelector } from '@/src/shared/store/hooks'
-import { selectCartItems, selectCartTotal, selectCartCount } from '@/src/shared/store/slices/cartSlice'
+import { useAppSelector } from '@/lib/store/hooks'
+import { selectCartItems, selectCartTotal, selectCartCount } from '@/lib/store/slices/cartSlice'
 
 // Import checkout step components
 import { CartReviewStep } from '@/components/checkout/cart-review-step'

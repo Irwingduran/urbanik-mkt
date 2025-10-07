@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, role, companyName } = body
+    const { name, email, password } = body
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -16,16 +16,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!role || !['USER', 'VENDOR'].includes(role)) {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Valid role is required (USER or VENDOR)' },
+        { error: 'Invalid email format' },
         { status: 400 }
       )
     }
 
-    if (role === 'VENDOR' && !companyName) {
+    // Password strength validation
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Company name is required for vendor accounts' },
+        { error: 'Password must be at least 8 characters long' },
         { status: 400 }
       )
     }
@@ -47,17 +50,26 @@ export async function POST(request: NextRequest) {
 
     // Create user with transaction to ensure data consistency
     const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Create the user
+      // 1. Create the user (with deprecated 'role' field for backward compatibility)
       const user = await tx.user.create({
         data: {
           name,
           email,
           password: hashedPassword,
-          role: role as 'USER' | 'VENDOR'
+          role: 'USER', // Keep for backward compatibility, will be DEPRECATED
         }
       })
 
-      // Create initial profile
+      // 2. Assign USER role (new multi-role system)
+      await tx.userRole.create({
+        data: {
+          userId: user.id,
+          role: 'USER',
+          active: true,
+        }
+      })
+
+      // 3. Create initial UserProfile (legacy compatibility)
       await tx.userProfile.create({
         data: {
           userId: user.id,
@@ -66,16 +78,14 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // If vendor, create vendor profile
-      if (role === 'VENDOR' && companyName) {
-        await tx.vendor.create({
-          data: {
-            userId: user.id,
-            companyName: companyName,
-            description: `Welcome to ${companyName}! We're committed to sustainability.`,
-          }
-        })
-      }
+      // 4. Create CustomerProfile (new system)
+      await tx.customerProfile.create({
+        data: {
+          userId: user.id,
+          loyaltyTier: 'BRONZE',
+          rewardPoints: 0,
+        }
+      })
 
       return user
     })
@@ -93,8 +103,19 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Registration error:', error)
+
+    // More detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined
+    })
+
     return NextResponse.json(
-      { error: 'Failed to create account. Please try again.' },
+      {
+        error: 'Failed to create account. Please try again.',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

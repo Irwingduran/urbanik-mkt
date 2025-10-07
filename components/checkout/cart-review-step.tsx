@@ -5,8 +5,8 @@ import { Plus, Minus, Trash2, Star, Award, Leaf } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useAppDispatch } from '@/src/shared/store/hooks'
-import { updateQuantity, removeItem } from '@/src/shared/store/slices/cartSlice'
+import { useAppDispatch } from '@/lib/store/hooks'
+import { updateQuantity, removeItem } from '@/lib/store/slices/cartSlice'
 
 interface CartItem {
   productId: string

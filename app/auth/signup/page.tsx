@@ -8,9 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Leaf, Mail, Lock, Eye, EyeOff, User, Building } from 'lucide-react'
+import { Leaf, Mail, Lock, Eye, EyeOff, User } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -20,8 +19,6 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'USER',
-    companyName: '',
     agreeToTerms: false
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -55,20 +52,14 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
-          companyName: formData.role === 'VENDOR' ? formData.companyName : undefined
         })
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        // Successfully created account - redirect based on role
-        if (formData.role === 'VENDOR') {
-          router.push('/onboarding?step=welcome&new_user=true')
-        } else {
-          router.push('/auth/profile-setup?new_user=true')
-        }
+        // Successfully created account - all users go to profile setup
+        router.push('/auth/profile-setup?new_user=true')
       } else {
         setError(data.error || 'Failed to create account')
       }
@@ -92,7 +83,7 @@ export default function SignUpPage() {
             <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
               <Leaf className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-2xl text-gray-900">RegenMarket</span>
+            <span className="font-bold text-2xl text-gray-900">Urbanika Marketplace</span>
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Create account</h2>
           <p className="mt-2 text-gray-600">Join the sustainable marketplace community</p>
@@ -100,7 +91,7 @@ export default function SignUpPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign up for RegenMarket</CardTitle>
+            <CardTitle>Sign up for Urbanika Marketplace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
@@ -141,37 +132,6 @@ export default function SignUpPage() {
                   />
                 </div>
               </div>
-
-              <div>
-                <Label htmlFor="role">Account Type</Label>
-                <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USER">Customer - Buy sustainable products</SelectItem>
-                    <SelectItem value="VENDOR">Vendor - Sell eco-friendly products</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.role === 'VENDOR' && (
-                <div>
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <div className="relative mt-1">
-                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="companyName"
-                      type="text"
-                      required
-                      className="pl-10"
-                      placeholder="Enter your company name"
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
 
               <div>
                 <Label htmlFor="password">Password</Label>

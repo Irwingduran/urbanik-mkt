@@ -6,7 +6,8 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
 // Define Role type manually to avoid import issues
-type Role = 'USER' | 'VENDOR' | 'ADMIN'
+// CUSTOMER and USER are treated as equivalent
+type Role = 'USER' | 'CUSTOMER' | 'VENDOR' | 'ADMIN'
 
 // Extended user type with role
 declare module "next-auth" {
@@ -15,19 +16,22 @@ declare module "next-auth" {
       id: string
       email: string
       name?: string
-      role: Role
+      role: Role // Deprecated - use roles
+      roles: Role[] // New multi-role system
       image?: string
     }
   }
 
   interface User {
-    role: Role
+    role: Role // Deprecated - use roles
+    roles?: Role[] // New multi-role system
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    role: Role
+    role: Role // Deprecated - use roles
+    roles?: Role[] // New multi-role system
     userId: string
   }
 }
@@ -89,11 +93,17 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id
         token.role = user.role
+        token.roles = user.roles || [user.role]
       }
 
-      // Handle session update
-      if (trigger === "update" && session?.role) {
-        token.role = session.role
+      // Handle session update - refresh roles from database
+      if (trigger === "update" && token.userId) {
+        const userRoles = await prisma.userRole.findMany({
+          where: { userId: token.userId as string, active: true },
+          select: { role: true }
+        })
+        token.roles = userRoles.map(ur => ur.role as Role)
+        token.role = token.roles[0] || 'USER'
       }
 
       return token
@@ -101,7 +111,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.userId as string
-        session.user.role = token.role as Role
+        session.user.role = (token.role || 'USER') as any
+        session.user.roles = (token.roles || ['USER']) as any
       }
       return session
     },

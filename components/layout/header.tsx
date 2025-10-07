@@ -5,7 +5,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -16,10 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/src/shared/hooks/useAuth"
-import { CartCounter } from "@/src/features/cart/components/CartCounter"
+import { useAuth } from "@/lib/hooks/useAuth"
+import { CartCounter } from "@/components/cart/CartCounter"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
-import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown } from "lucide-react"
+import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart } from "lucide-react"
 
 // Types para mejor TypeScript support
 interface User {
@@ -29,12 +28,12 @@ interface User {
   image?: string | null
 }
 
-type UserRole = 'ADMIN' | 'VENDOR' | 'USER' | null
+type UserRoleType = 'ADMIN' | 'VENDOR' | 'USER' | 'CUSTOMER' | null
 
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  role: UserRole
+  role: UserRoleType
   isLoading: boolean
 }
 
@@ -53,26 +52,28 @@ export default function Header() {
     isLoading
   }
 
-  const getRoleIcon = (role: UserRole) => {
+  const getRoleIcon = (role: UserRoleType) => {
     switch (role) {
       case 'ADMIN':
         return <Crown className="w-4 h-4 text-yellow-600" />
       case 'VENDOR':
         return <Store className="w-4 h-4 text-blue-600" />
       case 'USER':
+      case 'CUSTOMER': // CUSTOMER is treated as USER
         return <User className="w-4 h-4 text-green-600" />
       default:
         return <User className="w-4 h-4 text-gray-600" />
     }
   }
 
-  const getRoleLabel = (role: UserRole) => {
+  const getRoleLabel = (role: UserRoleType) => {
     switch (role) {
       case 'ADMIN':
         return 'Administrador'
       case 'VENDOR':
         return 'Vendedor'
       case 'USER':
+      case 'CUSTOMER': // CUSTOMER is treated as USER
         return 'Usuario'
       default:
         return 'Invitado'
@@ -224,39 +225,60 @@ export default function Header() {
                         {authState.user?.email}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
-                        {getRoleIcon(authState.role)}
+                        {getRoleIcon(authState.role ?? 'USER')}
                         <span className="text-xs text-muted-foreground">
-                          {getRoleLabel(authState.role)}
+                          {getRoleLabel(authState.role ?? 'USER')}
                         </span>
                       </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  {/* Role-based navigation */}
-                  {authState.role === 'ADMIN' && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/admin" className="flex items-center cursor-pointer">
-                          <Shield className="mr-2 h-4 w-4" />
-                          <span>Panel Admin</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
+                  {/* Dashboards Section */}
+                  <div className="px-2 py-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Mis Dashboards
+                    </p>
+                  </div>
+
+                  {/* Dashboard Comprador - Siempre visible */}
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="flex items-start gap-3 cursor-pointer py-3">
+                      <ShoppingCart className="w-4 h-4 mt-0.5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Dashboard Comprador</p>
+                        <p className="text-xs text-muted-foreground">Mis compras y órdenes</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+
+                  {/* Dashboard Vendedor - Solo si es VENDOR */}
+                  {(authState.role === 'VENDOR' || authState.role === 'ADMIN') && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/vendor" className="flex items-start gap-3 cursor-pointer py-3">
+                        <Store className="w-4 h-4 mt-0.5 text-blue-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-600">Dashboard Vendedor</p>
+                          <p className="text-xs text-muted-foreground">Mis productos y ventas</p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
                   )}
 
-                  {(authState.role === 'VENDOR' || authState.role === 'ADMIN') && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/vendor" className="flex items-center cursor-pointer">
-                          <Store className="mr-2 h-4 w-4" />
-                          <span>Panel Vendedor</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
+                  {/* Dashboard Admin - Solo si es ADMIN */}
+                  {authState.role === 'ADMIN' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/admin" className="flex items-start gap-3 cursor-pointer py-3">
+                        <Shield className="w-4 h-4 mt-0.5 text-purple-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-purple-600">Panel Admin</p>
+                          <p className="text-xs text-muted-foreground">Gestión del sistema</p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
                   )}
+
+                  <DropdownMenuSeparator />
 
                   <DropdownMenuItem asChild>
                     <Link href="/profile" className="flex items-center cursor-pointer">
@@ -367,9 +389,9 @@ export default function Header() {
                           {authState.user?.name || 'Usuario'}
                         </p>
                         <div className="flex items-center gap-1">
-                          {getRoleIcon(authState.role)}
+                          {getRoleIcon(authState.role ?? 'USER')}
                           <span className="text-xs text-gray-500 truncate">
-                            {getRoleLabel(authState.role)}
+                            {getRoleLabel(authState.role ?? 'USER')}
                           </span>
                         </div>
                       </div>

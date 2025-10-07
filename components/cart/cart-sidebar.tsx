@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { X, Plus, Minus, ShoppingBag, Truck, Shield, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useAppDispatch, useAppSelector } from '@/src/shared/store/hooks'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import {
   selectCartItems,
   selectCartTotal,
@@ -13,7 +13,7 @@ import {
   updateQuantity,
   removeItem,
   clearCart
-} from '@/src/shared/store/slices/cartSlice'
+} from '@/lib/store/slices/cartSlice'
 
 export function CartSidebar() {
   const dispatch = useAppDispatch()

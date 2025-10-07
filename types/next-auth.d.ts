@@ -1,21 +1,25 @@
 import { DefaultSession, DefaultUser } from "next-auth"
-import { UserRole } from "@/src/shared/types/api.types"
+import { Role } from "@prisma/client"
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string
-      role: UserRole
+      role: Role // Deprecated - use roles instead
+      roles: Role[] // New multi-role system
     } & DefaultSession["user"]
   }
 
   interface User extends DefaultUser {
-    role: UserRole
+    role: Role // Deprecated - use roles instead
+    roles?: Role[] // New multi-role system
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    role: UserRole
+    id?: string
+    role: Role // Deprecated - use roles instead
+    roles?: Role[] // New multi-role system
   }
 }

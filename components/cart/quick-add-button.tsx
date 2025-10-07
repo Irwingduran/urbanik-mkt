@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, Check, Loader2 } from 'lucide-react'
-import { useAppDispatch } from '@/src/shared/store/hooks'
-import { addItem } from '@/src/shared/store/slices/cartSlice'
+import { useAppDispatch } from '@/lib/store/hooks'
+import { addItem } from '@/lib/store/slices/cartSlice'
 
 interface Product {
   id: string

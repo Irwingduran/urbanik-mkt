@@ -62,7 +62,7 @@ export default function SignInPage() {
             <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
               <Leaf className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-2xl text-gray-900">RegenMarket</span>
+            <span className="font-bold text-2xl text-gray-900">Urbanika Marketplace</span>
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
           <p className="mt-2 text-gray-600">Sign in to your sustainable marketplace account</p>
@@ -194,7 +194,6 @@ export default function SignInPage() {
             <h3 className="font-medium text-sm text-green-800 mb-2">Demo Accounts (for testing)</h3>
             <div className="space-y-2 text-xs text-green-700">
               <div>Customer: demo@customer.com / password123</div>
-              <div>Vendor: demo@vendor.com / password123</div>
               <div>Admin: admin@regenmarket.com / admin123</div>
             </div>
           </CardContent>

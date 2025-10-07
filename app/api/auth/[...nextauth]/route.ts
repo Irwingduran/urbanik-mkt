@@ -3,7 +3,7 @@ import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
-import { UserRole } from "@/src/shared/types/api.types"
+import { Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 
 const handler = NextAuth({
@@ -27,6 +27,12 @@ const handler = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          include: {
+            userRoles: {
+              where: { active: true },
+              select: { role: true }
+            }
+          }
         })
 
         if (!user || !user.password) {
@@ -39,12 +45,16 @@ const handler = NextAuth({
           return null
         }
 
+        // Get all active roles
+        const roles = user.userRoles.map(ur => ur.role)
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
-        }
+          role: user.role, // Deprecated single role
+          roles: roles, // New multi-role array
+        } as any
       },
     }),
   ],
@@ -53,24 +63,73 @@ const handler = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // Persist the OAuth account info on the token right after sign in
+    async jwt({ token, user, trigger }) {
+      // On sign in, add user data to token
       if (user) {
-        token.role = user.role
         token.id = user.id
+        token.role = user.role // Deprecated
+        token.roles = user.roles || []
       }
+
+      // Refresh roles on update (when user becomes vendor, etc.)
+      if (trigger === 'update' && token.id) {
+        const userRoles = await prisma.userRole.findMany({
+          where: {
+            userId: token.id as string,
+            active: true
+          },
+          select: { role: true }
+        })
+        token.roles = userRoles.map(ur => ur.role)
+      }
+
       return token
     },
     async session({ session, token }) {
       // Send properties to the client
       if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as UserRole || 'USER'
+        ;(session.user as any).id = token.id as string
+        ;(session.user as any).role = (token.role || 'USER') as any // Deprecated
+        ;(session.user as any).roles = (token.roles || ['USER']) as any
       }
       return session
     },
     async signIn({ user, account, profile }) {
-      // Allow all sign-ins for now, but you can add custom logic here
+      // For OAuth sign-ins, ensure user has USER role
+      if (account?.provider === 'google') {
+        const existingRoles = await prisma.userRole.findMany({
+          where: { userId: user.id }
+        })
+
+        // If no roles exist, assign USER role
+        if (existingRoles.length === 0) {
+          await prisma.$transaction(async (tx) => {
+            // Assign USER role
+            await tx.userRole.create({
+              data: {
+                userId: user.id,
+                role: 'USER',
+                active: true,
+              }
+            })
+
+            // Create CustomerProfile if doesn't exist
+            const hasCustomerProfile = await tx.customerProfile.findUnique({
+              where: { userId: user.id }
+            })
+
+            if (!hasCustomerProfile) {
+              await tx.customerProfile.create({
+                data: {
+                  userId: user.id,
+                  loyaltyTier: 'BRONZE',
+                }
+              })
+            }
+          })
+        }
+      }
+
       return true
     },
   },

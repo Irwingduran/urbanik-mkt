@@ -3,15 +3,14 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, ArrowRight, Star, Percent, TrendingUp, Zap, Heart, ShoppingCart, Leaf, Sparkles, Target, Users, Clock, Award } from "lucide-react"
-import { ProductCard } from "@/components/marketplace/product-card"
 import { ProductCarousel } from "@/components/marketplace/product-carousel"
-import { CategoryCarousel } from "@/components/marketplace/category-carousel"
 import Header from "@/components/layout/header"
+import ImpactBanner from "@/components/home/impact-banner"
+import Footer from "@/components/layout/footer"
 
 // Product interface
 interface Product {
@@ -168,14 +167,14 @@ export default function Homepage() {
           {/* Badge de impacto */}
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 mb-8 border border-gray-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-            <span className="text-sm font-medium text-gray-700">+10,000 compras sostenibles este mes</span>
+            <span className="text-sm font-medium text-gray-700">Marketplace #1 en Sostenibilidad</span>
           </div>
 
           {/* Headline principal */}
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Compra con
+            Urbanika
             <span className="block bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              Propósito
+              Marketplace
             </span>
           </h1>
 
@@ -259,36 +258,6 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Sección de Categorías - Rediseñada */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="bg-green-100 text-green-800 px-4 py-1 rounded-full text-sm font-medium mb-4">
-              Explora por categoría
-            </Badge>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Encuentra tu camino hacia la sostenibilidad
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Desde energía renovable hasta gestión de residuos, cada categoría representa un paso hacia un futuro más verde.
-            </p>
-          </div>
-
-          <CategoryCarousel
-            categories={[
-              { name: 'Energía Solar', icon: '☀️', color: 'from-yellow-400 to-orange-500', href: '/marketplace?category=Energía Solar', count: 25 },
-              { name: 'Gestión de Agua', icon: '💧', color: 'from-blue-400 to-cyan-500', href: '/marketplace?category=Gestión de Agua', count: 18 },
-              { name: 'Movilidad Eléctrica', icon: '🔋', color: 'from-green-400 to-emerald-500', href: '/marketplace?category=Movilidad Eléctrica', count: 32 },
-              { name: 'Gestión de Residuos', icon: '♻️', color: 'from-emerald-400 to-green-500', href: '/marketplace?category=Gestión de Residuos', count: 15 },
-              { name: 'Iluminación LED', icon: '💡', color: 'from-amber-400 to-yellow-500', href: '/marketplace?category=Iluminación', count: 22 },
-              { name: 'Calidad del Aire', icon: '🌬️', color: 'from-cyan-400 to-blue-500', href: '/marketplace?category=Calidad del Aire', count: 12 },
-              { name: 'Agricultura Sostenible', icon: '🌱', color: 'from-green-500 to-green-600', href: '/marketplace?category=Agricultura', count: 28 },
-              { name: 'Construcción Verde', icon: '🏗️', color: 'from-gray-500 to-gray-600', href: '/marketplace?category=Construcción', count: 19 }
-            ]}
-          />
-        </div>
-      </section>
-
       {/* Productos Destacados - Layout Mejorado */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -321,37 +290,8 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Banner de Impacto Colectivo - Rediseñado */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-lg rounded-3xl p-12 text-center border border-green-500/20">
-            <Badge className="bg-green-500/20 text-green-300 px-4 py-1 rounded-full text-sm font-medium mb-6">
-              Impacto Colectivo
-            </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Juntos estamos haciendo la diferencia
-            </h2>
-            <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-              Cada compra en nuestro marketplace contribuye a métricas de sostenibilidad verificadas en tiempo real.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {impactMetrics.map((metric, index) => {
-                const Icon = metric.icon
-                return (
-                  <div key={metric.label} className="text-center group">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-2xl mb-4 group-hover:bg-green-500/30 transition-colors">
-                      <Icon className="w-8 h-8 text-green-400" />
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-2">{metric.value}</div>
-                    <div className="text-gray-400">{metric.label}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
+     {/* Banner de Impacto - Versión Comercial Premium */}
+      <ImpactBanner />
 
       {/* Ofertas Especiales - Layout Mejorado */}
       <section className="py-20 bg-orange-50">
@@ -437,7 +377,7 @@ export default function Homepage() {
               </Button>
             </Link>
             <Link href="/onboarding">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-xl px-8 font-semibold">
+              <Button size="lg" variant="outline" className="border-white text-black hover:bg-white/10 rounded-xl px-8 font-semibold">
                 <Heart className="w-5 h-5 mr-2" />
                 Vender Mis Productos
               </Button>
@@ -445,6 +385,7 @@ export default function Homepage() {
           </div>
         </div>
       </section>
+      <Footer/>
     </div>
   )
 }

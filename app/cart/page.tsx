@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import Header from '@/components/layout/header'
-import { useAppDispatch, useAppSelector } from '@/src/shared/store/hooks'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import {
   selectCartItems,
   selectCartTotal,
@@ -31,7 +31,7 @@ import {
   updateQuantity,
   removeItem,
   clearCart
-} from '@/src/shared/store/slices/cartSlice'
+} from '@/lib/store/slices/cartSlice'
 
 export default function CartPage() {
   const router = useRouter()
