@@ -1,13 +1,13 @@
 // Authentication state slice
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { UserRole } from '../../types/api.types'
+import { Role } from '@prisma/client'
 
 interface User {
   id: string
   email: string
   name?: string
-  role: UserRole
+  role: Role
   companyName?: string
   memberSince?: string
 }
