@@ -14,7 +14,7 @@ export async function GET(
         active: true
       },
       include: {
-        vendor: {
+        vendorProfile: {
           include: {
             user: {
               select: {
@@ -82,19 +82,17 @@ export async function GET(
       salesCount: product.salesCount,
       averageRating: product.averageRating,
       reviewCount: product.reviewCount,
-      vendor: {
-        id: product.vendor.id,
-        companyName: product.vendor.companyName,
-        description: product.vendor.description,
-        website: product.vendor.website,
-        phone: product.vendor.phone,
-        location: product.vendor.location,
-        regenScore: product.vendor.regenScore,
-        nftLevel: product.vendor.nftLevel,
-        totalProducts: product.vendor.totalProducts,
-        totalSales: product.vendor.totalSales,
-        name: product.vendor.user.name,
-        email: product.vendor.user.email
+      vendorProfile: {
+        id: product.vendorProfile.id,
+        companyName: product.vendorProfile.companyName,
+        description: product.vendorProfile.description,
+        website: product.vendorProfile.website,
+        phone: product.vendorProfile.businessPhone,
+        regenScore: product.vendorProfile.regenScore,
+        totalProducts: product.vendorProfile.totalProducts,
+        totalSales: Number(product.vendorProfile.totalSales),
+        name: product.vendorProfile.user.name,
+        email: product.vendorProfile.user.email
       },
       reviews: product.reviews.map((review: typeof product.reviews[0]) => ({
         id: review.id,

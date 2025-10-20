@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         inStock: true
       },
       include: {
-        vendor: true
+        vendorProfile: true
       }
     })
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Group items by vendor (for multi-vendor support)
     const itemsByVendor = items.reduce((acc: any, item: any) => {
       const product = products.find((p: any) => p.id === item.productId)!
-      const vendorId = product.vendorId
+      const vendorId = product.vendorUserId
 
       if (!acc[vendorId]) {
         acc[vendorId] = []
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         const order = await prisma.order.create({
           data: {
             userId: session.user.id,
-            vendorId,
+            vendorUserId: vendorId,
             status: "PENDING",
             subtotal,
             tax,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
                 }
               }
             },
-            vendor: {
+            vendorProfile: {
               select: {
                 companyName: true,
                 user: { select: { name: true } }

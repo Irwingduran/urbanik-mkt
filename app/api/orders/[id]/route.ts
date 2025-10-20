@@ -27,7 +27,7 @@ export async function GET(
             email: true
           }
         },
-        vendor: {
+        vendorProfile: {
           select: {
             id: true,
             companyName: true,
@@ -60,7 +60,7 @@ export async function GET(
 
     // Check if user has permission to view this order
     const isOwner = order.userId === session.user.id
-    const isVendor = order.vendorId === session.user.id
+    const isVendor = order.vendorUserId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
 
     if (!isOwner && !isVendor && !isAdmin) {
@@ -120,7 +120,7 @@ export async function PATCH(
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        vendor: true,
+        vendorProfile: true,
         user: true
       }
     })
@@ -130,7 +130,7 @@ export async function PATCH(
     }
 
     // Check permissions
-    const isVendor = order.vendorId === session.user.id
+    const isVendor = order.vendorUserId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
 
     if (!isVendor && !isAdmin) {
@@ -174,7 +174,7 @@ export async function PATCH(
             email: true
           }
         },
-        vendor: {
+        vendorProfile: {
           select: {
             id: true,
             companyName: true

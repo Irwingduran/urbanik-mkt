@@ -67,7 +67,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
             email: true
           }
         },
-        vendor: {
+        vendorProfile: {
           select: {
             id: true,
             companyName: true,
@@ -86,7 +86,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
               select: {
                 id: true,
                 name: true,
-                vendorId: true,
+                vendorUserId: true,
                 regenScore: true
               }
             }
@@ -127,7 +127,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
         // Create vendor notification
         await prisma.notification.create({
           data: {
-            userId: order.vendor.user.id,
+            userId: order.vendorProfile.user.id,
             orderId: order.id,
             type: "ORDER_CREATED",
             title: "Nuevo Pedido",
@@ -347,7 +347,7 @@ async function handleChargeDispute(charge: any) {
     const orders = await prisma.order.findMany({
       where: { stripePaymentId: paymentIntent.id },
       include: {
-        vendor: {
+        vendorProfile: {
           select: {
             user: {
               select: {
@@ -365,7 +365,7 @@ async function handleChargeDispute(charge: any) {
       orders.map((order: any) =>
         prisma.notification.create({
           data: {
-            userId: order.vendor.user.id,
+            userId: order.vendorProfile.user.id,
             orderId: order.id,
             type: "SYSTEM",
             title: "Disputa de Pago",

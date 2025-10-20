@@ -8,48 +8,60 @@ async function main() {
 
   // Create categories first
   const categories = await Promise.all([
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'energia-solar' },
+      update: {},
+      create: {
         name: 'Energía Solar',
         slug: 'energia-solar',
         description: 'Paneles solares y tecnología de energía renovable',
         icon: '☀️'
       }
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'gestion-agua' },
+      update: {},
+      create: {
         name: 'Gestión de Agua',
         slug: 'gestion-agua',
         description: 'Sistemas de filtración y conservación de agua',
         icon: '💧'
       }
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'movilidad-electrica' },
+      update: {},
+      create: {
         name: 'Movilidad Eléctrica',
         slug: 'movilidad-electrica',
         description: 'Vehículos eléctricos y cargadores',
         icon: '🔋'
       }
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'gestion-residuos' },
+      update: {},
+      create: {
         name: 'Gestión de Residuos',
         slug: 'gestion-residuos',
         description: 'Soluciones de reciclaje y compostaje',
         icon: '♻️'
       }
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'iluminacion' },
+      update: {},
+      create: {
         name: 'Iluminación',
         slug: 'iluminacion',
         description: 'Sistemas de iluminación LED y solar',
         icon: '💡'
       }
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: { slug: 'calidad-aire' },
+      update: {},
+      create: {
         name: 'Calidad del Aire',
         slug: 'calidad-aire',
         description: 'Filtros HEPA y purificadores de aire',
@@ -106,6 +118,22 @@ async function main() {
     }
   })
 
+  // Ensure UserRole exists for customer
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: customerUser.id,
+        role: 'USER'
+      }
+    },
+    update: { active: true },
+    create: {
+      userId: customerUser.id,
+      role: 'USER',
+      active: true
+    }
+  })
+
   // Create Vendor Demo User with Vendor Profile
   const vendorUser = await prisma.user.upsert({
     where: { email: 'demo@vendor.com' },
@@ -125,22 +153,39 @@ async function main() {
           loyaltyPoints: 1200,
         }
       },
-      vendor: {
+      vendorProfile: {
         create: {
           companyName: 'EcoTech Solutions Demo',
           description: 'Empresa líder en soluciones de energía renovable y tecnología sostenible.',
           website: 'https://ecotech-demo.com',
-          phone: '+52 555 987 6543',
-          founded: '2020',
-          employees: '25-50',
-          location: 'Ciudad de México, México',
+          businessPhone: '+52 555 987 6543',
+          foundedYear: 2020,
+          employeeCount: '25-50',
+          businessAddress: 'Ciudad de México, México',
           regenScore: 92,
-          nftLevel: 'Bosque Dorado',
           totalProducts: 15,
           totalSales: 450,
-          monthlyRevenue: 125000.50
+          verificationStatus: 'VERIFIED',
+          onboardingStatus: 'APPROVED',
+          active: true
         }
       }
+    }
+  })
+
+  // Ensure UserRole exists for vendor
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: vendorUser.id,
+        role: 'VENDOR'
+      }
+    },
+    update: { active: true },
+    create: {
+      userId: vendorUser.id,
+      role: 'VENDOR',
+      active: true
     }
   })
 
@@ -166,20 +211,36 @@ async function main() {
     }
   })
 
-  // Get the vendor record for product creation
-  const vendorRecord = await prisma.vendor.findUnique({
+  // Ensure UserRole exists for admin
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: adminUser.id,
+        role: 'ADMIN'
+      }
+    },
+    update: { active: true },
+    create: {
+      userId: adminUser.id,
+      role: 'ADMIN',
+      active: true
+    }
+  })
+
+  // Get the vendor profile for product creation
+  const vendorRecord = await prisma.vendorProfile.findUnique({
     where: { userId: vendorUser.id }
   })
 
   if (!vendorRecord) {
-    throw new Error('Vendor record not found')
+    throw new Error('Vendor profile not found')
   }
 
   // Create sample products
   const products = await Promise.all([
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Panel Solar Bifacial 450W',
         description: 'Panel solar de alta eficiencia con tecnología bifacial para máximo aprovechamiento de la luz solar. Ideal para instalaciones residenciales y comerciales.',
         price: 1299,
@@ -217,7 +278,7 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Sistema Captación Agua Lluvia 500L',
         description: 'Sistema completo para captación y almacenamiento de agua de lluvia con filtros integrados y sistema de purificación.',
         price: 850,
@@ -253,7 +314,7 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Cargador Vehicular Eléctrico 22kW',
         description: 'Cargador rápido para vehículos eléctricos con tecnología inteligente y conectividad WiFi. Compatible con todos los estándares.',
         price: 1800,
@@ -290,7 +351,7 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Luminarias LED Solares Urbanas',
         description: 'Sistema de iluminación LED solar para espacios urbanos con sensor de movimiento y gestión inteligente.',
         price: 650,
@@ -327,7 +388,7 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Compostador Inteligente IoT',
         description: 'Compostador automatizado con sensores IoT para monitoreo y control remoto del proceso.',
         price: 1899,
@@ -363,7 +424,7 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        vendorId: vendorRecord.id,
+        vendorUserId: vendorRecord.userId,
         name: 'Filtro de Aire HEPA Industrial',
         description: 'Sistema de filtración de aire industrial con tecnología HEPA para máxima purificación del aire.',
         price: 3200,
@@ -405,7 +466,7 @@ async function main() {
   const sampleOrder = await prisma.order.create({
     data: {
       userId: customerUser.id,
-      vendorId: vendorRecord.id,
+      vendorUserId: vendorRecord.userId,
       status: 'DELIVERED',
       total: 1499,
       subtotal: 1299,

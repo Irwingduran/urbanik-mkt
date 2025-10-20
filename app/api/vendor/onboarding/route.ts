@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -19,22 +20,33 @@ export async function POST(request: NextRequest) {
       description,
       website,
       phone,
-      founded,
-      employees,
-      location,
-      contactName,
-      contactEmail,
-      contactPhone,
-      businessRegistration,
-      taxId,
+      email,
+      address,
+      category,
       certifications,
-      sustainabilityFocus
+      sustainabilityFocus,
+      sustainabilityMetrics,
+      contactName
     } = body
 
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { vendor: true, profile: true }
+      include: {
+        userRoles: {
+          where: { active: true },
+          select: { role: true }
+        },
+        vendorApplication: {
+          where: {
+            status: {
+              in: ['PENDING', 'IN_REVIEW'] // Only block if PENDING or IN_REVIEW
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      }
     })
 
     if (!user) {
@@ -44,86 +56,72 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'VENDOR') {
+    // Check if user already has VENDOR role (already approved)
+    const hasVendorRole = user.userRoles.some(ur => ur.role === 'VENDOR')
+    if (hasVendorRole) {
       return NextResponse.json(
-        { error: 'User is not a vendor' },
-        { status: 403 }
+        {
+          error: 'Ya eres un vendedor aprobado',
+          message: 'Tu solicitud ya fue aprobada. Puedes acceder a tu panel de vendedor.'
+        },
+        { status: 400 }
       )
     }
 
-    // Create or update user profile for vendor
-    const profileData = {
-      userId: user.id,
-      firstName: contactName?.split(' ')[0] || user.name?.split(' ')[0] || '',
-      lastName: contactName?.split(' ').slice(1).join(' ') || user.name?.split(' ').slice(1).join(' ') || '',
-      phone: contactPhone || phone,
-      sustainabilityFocus: sustainabilityFocus || [],
-      preferredCategories: sustainabilityFocus || [],
-      regenScore: 50, // Starting vendor score
-      loyaltyPoints: 100, // Starting points for vendors
-      nftsCollected: [
+    // Check if user has a pending or in-review application
+    if (user.vendorApplication && user.vendorApplication.length > 0) {
+      const currentApplication = user.vendorApplication[0]
+      return NextResponse.json(
         {
-          id: 1,
-          name: 'Semilla Verde Empresarial',
-          emoji: '🌱',
-          rarity: 'common',
-          level: 'Inicial',
-          description: 'Tu primer NFT como proveedor sostenible certificado'
-        }
-      ]
+          error: currentApplication.status === 'PENDING'
+            ? 'Ya tienes una solicitud pendiente'
+            : 'Tu solicitud está siendo revisada',
+          application: currentApplication
+        },
+        { status: 400 }
+      )
     }
 
-    let profile
-    if (user.profile) {
-      profile = await prisma.userProfile.update({
-        where: { userId: user.id },
-        data: profileData
-      })
-    } else {
-      profile = await prisma.userProfile.create({
-        data: profileData
-      })
-    }
+    // If user was REJECTED, they can apply again (no blocking here)
 
-    // Create or update vendor profile
-    const vendorData = {
-      userId: user.id,
-      companyName: companyName || 'New Sustainable Business',
-      description: description || `Welcome to ${companyName || 'our business'}! We're committed to sustainable products and practices.`,
-      website: website || null,
-      phone: phone || null,
-      founded: founded || null,
-      employees: employees || null,
-      location: location || null,
-      regenScore: 50,
-      nftLevel: 'Semilla Verde',
-      totalProducts: 0,
-      totalSales: 0,
-      monthlyRevenue: 0
-    }
-
-    let vendor
-    if (user.vendor) {
-      vendor = await prisma.vendor.update({
-        where: { userId: user.id },
-        data: vendorData
-      })
-    } else {
-      vendor = await prisma.vendor.create({
-        data: vendorData
-      })
-    }
+    // Create vendor application
+    const application = await prisma.vendorApplication.create({
+      data: {
+        userId: user.id,
+        companyName: companyName || 'New Sustainable Business',
+        businessType: category || 'Otro',
+        description: description || null,
+        website: website || null,
+        businessPhone: phone || null,
+        businessAddress: address || null,
+        taxId: null, // Can be added later
+        documents: {
+          certifications: certifications || [],
+          sustainabilityMetrics: sustainabilityMetrics || {},
+          sustainabilityFocus: sustainabilityFocus || [],
+          contactName: contactName || user.name,
+          contactEmail: email || user.email
+        },
+        status: 'PENDING',
+        submittedAt: new Date()
+      }
+    })
 
     return NextResponse.json({
-      message: 'Vendor onboarding completed successfully',
-      vendor: vendor,
-      profile: profile
+      success: true,
+      message: 'Solicitud de vendedor enviada exitosamente',
+      application: {
+        id: application.id,
+        companyName: application.companyName,
+        status: application.status,
+        submittedAt: application.submittedAt
+      }
     })
 
   } catch (error) {
     console.error('Vendor onboarding error:', error)
     return NextResponse.json(
-      { error: 'Failed to complete vendor onboarding' },
+      { error: 'Failed to submit vendor application' },
       { status: 500 }
     )
   }

@@ -23,13 +23,11 @@ export async function GET(request: NextRequest) {
       monthlyRevenue
     ] = await Promise.all([
       // Total users
-      prisma.user.count({
-        where: { role: "USER" }
-      }),
+      prisma.user.count(),
 
-      // Total vendors
-      prisma.user.count({
-        where: { role: "VENDOR" }
+      // Total vendors (users with VendorProfile)
+      prisma.vendorProfile.count({
+        where: { active: true }
       }),
 
       // Total products
@@ -41,12 +39,8 @@ export async function GET(request: NextRequest) {
       prisma.order.count(),
 
       // Pending vendor applications
-      prisma.vendor.count({
-        where: {
-          user: {
-            // Add approval status field to schema if needed
-          }
-        }
+      prisma.vendorApplication.count({
+        where: { status: "PENDING" }
       }),
 
       // Active orders (not delivered/cancelled)
@@ -80,14 +74,14 @@ export async function GET(request: NextRequest) {
         user: {
           select: { name: true, email: true }
         },
-        vendor: {
+        vendorProfile: {
           select: { companyName: true }
         }
       }
     })
 
     // Top performing vendors
-    const topVendors = await prisma.vendor.findMany({
+    const topVendors = await prisma.vendorProfile.findMany({
       take: 5,
       orderBy: { totalSales: "desc" },
       include: {

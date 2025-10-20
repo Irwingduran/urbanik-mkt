@@ -66,6 +66,9 @@ model UserProfile {
   @@map("user_profiles")
 }
 
+// DEPRECATED: Use VendorProfile instead
+// This model is kept for backward compatibility during migration
+// Will be removed in future version
 model Vendor {
   id             String    @id @default(cuid())
   userId         String    @unique
@@ -85,8 +88,9 @@ model Vendor {
   monthlyRevenue Float     @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  orders         Order[]
-  products       Product[]
+  // Relations commented out - use VendorProfile instead
+  // orders         Order[]
+  // products       Product[]
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("vendors")
@@ -94,7 +98,7 @@ model Vendor {
 
 model Product {
   id               String         @id @default(cuid())
-  vendorId         String
+  vendorUserId     String // Changed from vendorId - now points to VendorProfile.userId
   name             String
   description      String
   price            Float
@@ -125,19 +129,20 @@ model Product {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   orderItems       OrderItem[]
-  vendor           Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorProfile    VendorProfile  @relation(fields: [vendorUserId], references: [userId], onDelete: Cascade)
   reviews          Review[]
   wishlistItems    WishlistItem[]
   cartItems        CartItem[]
   notifications    Notification[]
 
+  @@index([vendorUserId])
   @@map("products")
 }
 
 model Order {
   id                String        @id @default(cuid())
   userId            String
-  vendorId          String
+  vendorUserId      String // Changed from vendorId - now points to VendorProfile.userId
   status            OrderStatus   @default(PENDING)
   total             Float
   subtotal          Float
@@ -154,8 +159,10 @@ model Order {
   updatedAt         DateTime      @updatedAt
   items             OrderItem[]
   user              User          @relation(fields: [userId], references: [id])
-  vendor            Vendor        @relation(fields: [vendorId], references: [id])
+  vendorProfile     VendorProfile @relation(fields: [vendorUserId], references: [userId])
 
+  @@index([userId])
+  @@index([vendorUserId])
   @@map("orders")
 }
 
@@ -407,7 +414,10 @@ model VendorProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+  orders   Order[]
 
   @@index([verificationStatus])
   @@index([active])
@@ -514,6 +524,9 @@ enum NotificationType {
   PRICE_ALERT
   MARKETING
   SYSTEM
+  VENDOR_APPROVED
+  VENDOR_REJECTED
+  VENDOR_IN_REVIEW
 }
 
 // NextAuth required tables

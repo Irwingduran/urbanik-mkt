@@ -82,7 +82,7 @@ export function BecomeVendorBanner() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <Link href="/become-vendor">
+              <Link href="/onboarding">
                 <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-shadow">
                   <Store className="w-4 h-4" />
                   Aplicar Ahora

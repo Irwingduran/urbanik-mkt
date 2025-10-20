@@ -18,6 +18,11 @@ import {
   Calendar
 } from 'lucide-react'
 import Link from 'next/link'
+import { useVendorStatus } from '@/hooks/useVendorStatus'
+import { BecomeVendorBanner } from '@/components/dashboard/BecomeVendorBanner'
+import { VendorApplicationPending } from '@/components/dashboard/VendorApplicationPending'
+import { VendorApplicationRejected } from '@/components/dashboard/VendorApplicationRejected'
+import { VendorDashboardLink } from '@/components/dashboard/VendorDashboardLink'
 
 // Datos de ejemplo - en producción vendrían de tu API
 const mockUserData = {
@@ -60,6 +65,7 @@ const mockUserData = {
 
 export default function UserDashboardPage() {
   const { data: session } = useSession()
+  const { status, isLoading, application, vendorProfile } = useVendorStatus()
 
   if (!session) {
     return (
@@ -67,6 +73,26 @@ export default function UserDashboardPage() {
         <p>Por favor inicia sesión para acceder a tu dashboard.</p>
       </div>
     )
+  }
+
+  // Renderiza el componente correcto según el estado del vendedor
+  const renderVendorSection = () => {
+    if (isLoading) {
+      return null // Evitar parpadeo mientras carga
+    }
+
+    switch (status) {
+      case 'approved':
+        return vendorProfile ? <VendorDashboardLink vendorProfile={vendorProfile} /> : null
+      case 'pending':
+      case 'in_review':
+        return application ? <VendorApplicationPending application={application} /> : null
+      case 'rejected':
+        return application ? <VendorApplicationRejected application={application} /> : null
+      case 'not_applied':
+      default:
+        return <BecomeVendorBanner />
+    }
   }
 
   return (
@@ -81,64 +107,8 @@ export default function UserDashboardPage() {
       />
 
       <div className="p-6 space-y-8">
-        {/* Estadísticas Rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Órdenes Totales</p>
-                  <p className="text-2xl font-bold text-gray-900">{mockUserData.totalOrders}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Gastado</p>
-                  <p className="text-2xl font-bold text-gray-900">${mockUserData.totalSpent}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Lista de Deseos</p>
-                  <p className="text-2xl font-bold text-gray-900">{mockUserData.wishlistItems}</p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <Heart className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">CO₂ Ahorrado</p>
-                  <p className="text-2xl font-bold text-gray-900">{mockUserData.impactMetrics.co2Saved} kg</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Leaf className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Sección de Vendedor - Condicional */}
+        {renderVendorSection()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Impacto Ambiental */}
@@ -151,11 +121,6 @@ export default function UserDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <Leaf className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-green-600">{mockUserData.impactMetrics.co2Saved}</p>
-                  <p className="text-sm text-gray-600">kg CO₂ ahorrado</p>
-                </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <Droplets className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-blue-600">{mockUserData.impactMetrics.waterSaved.toLocaleString()}</p>
@@ -171,17 +136,11 @@ export default function UserDashboardPage() {
                   <p className="text-2xl font-bold text-green-600">{mockUserData.impactMetrics.treesPlanted}</p>
                   <p className="text-sm text-gray-600">árboles plantados</p>
                 </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Progreso Meta Sostenibilidad</span>
-                  <span className="text-sm text-gray-500">{mockUserData.sustainabilityGoals.currentProgress}%</span>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <Leaf className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-green-600">{mockUserData.impactMetrics.co2Saved}</p>
+                  <p className="text-sm text-gray-600">kg CO₂ ahorrado</p>
                 </div>
-                <Progress value={mockUserData.sustainabilityGoals.currentProgress} className="w-full" />
-                <p className="text-xs text-gray-500 mt-1">
-                  Meta: {mockUserData.sustainabilityGoals.co2Target} kg CO₂ ahorrado este año
-                </p>
               </div>
             </CardContent>
           </Card>

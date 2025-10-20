@@ -12,26 +12,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Get vendor ID
-    let vendorId: string
+    const { searchParams } = new URL(request.url)
+
+    // Get vendor user ID
+    let vendorUserId: string
     if (session.user.role === "ADMIN") {
-      const { searchParams } = new URL(request.url)
       const requestedVendorId = searchParams.get("vendorId")
       if (!requestedVendorId) {
         return NextResponse.json({ error: "Vendor ID required for admin" }, { status: 400 })
       }
-      vendorId = requestedVendorId
+      vendorUserId = requestedVendorId
     } else {
-      const vendor = await prisma.vendor.findUnique({
-        where: { userId: session.user.id }
-      })
-      if (!vendor) {
-        return NextResponse.json({ error: "Vendor profile not found" }, { status: 404 })
-      }
-      vendorId = vendor.id
+      vendorUserId = session.user.id
     }
 
-    const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
     const category = searchParams.get("category")
@@ -41,7 +35,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { vendorId }
+    const where: any = { vendorUserId: vendorUserId }
 
     if (category) {
       where.category = category
@@ -136,25 +130,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Get vendor ID
-    let vendorId: string
+    const body = await request.json()
+
+    // Get vendor user ID
+    let vendorUserId: string
     if (session.user.role === "ADMIN") {
-      const body = await request.json()
-      vendorId = body.vendorId
-      if (!vendorId) {
+      vendorUserId = body.vendorId
+      if (!vendorUserId) {
         return NextResponse.json({ error: "Vendor ID required for admin" }, { status: 400 })
       }
     } else {
-      const vendor = await prisma.vendor.findUnique({
-        where: { userId: session.user.id }
-      })
-      if (!vendor) {
-        return NextResponse.json({ error: "Vendor profile not found" }, { status: 404 })
-      }
-      vendorId = vendor.id
+      vendorUserId = session.user.id
     }
-
-    const body = await request.json()
     const {
       name,
       description,
@@ -182,7 +169,7 @@ export async function POST(request: NextRequest) {
     // Check if SKU is unique for this vendor
     const existingSku = await prisma.product.findFirst({
       where: {
-        vendorId,
+        vendorUserId: vendorUserId,
         sku
       }
     })
@@ -203,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     const product = await prisma.product.create({
       data: {
-        vendorId,
+        vendorUserId: vendorUserId,
         name,
         description,
         price: parseFloat(price),
@@ -224,8 +211,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Update vendor product count
-    await prisma.vendor.update({
-      where: { id: vendorId },
+    await prisma.vendorProfile.update({
+      where: { userId: vendorUserId },
       data: {
         totalProducts: {
           increment: 1

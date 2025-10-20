@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { VendorDashboardLayout, VendorDashboardHeader } from '@/components/shared/layout/VendorDashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,36 +22,35 @@ export default function VendorDashboard() {
   const { data: session } = useSession()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Dashboard Vendedor
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Bienvenido, {session?.user?.name || 'Vendedor'}
-          </p>
-        </div>
+    <VendorDashboardLayout>
+      <VendorDashboardHeader
+        title="Dashboard Vendedor"
+        subtitle={`Bienvenido, ${session?.user?.name || 'Vendedor'}`}
+        breadcrumbs={[
+          { label: 'Dashboard Vendedor' }
+        ]}
+      />
+
+      <div className="p-6 space-y-8">
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Link href="/dashboard/vendor/products/new">
-            <Button className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link href="/dashboard/vendor/inventory?action=create">
+            <Button className="w-full h-auto py-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700" size="lg">
               <Plus className="w-5 h-5" />
               <span>Crear Producto</span>
             </Button>
           </Link>
 
           <Link href="/dashboard/vendor/orders">
-            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2 border-green-600 text-green-700 hover:bg-green-50" size="lg">
               <ShoppingCart className="w-5 h-5" />
               <span>Ver Órdenes</span>
             </Button>
           </Link>
 
           <Link href="/dashboard/vendor/analytics">
-            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2" size="lg">
+            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2 border-green-600 text-green-700 hover:bg-green-50" size="lg">
               <BarChart3 className="w-5 h-5" />
               <span>Analytics</span>
             </Button>
@@ -58,62 +58,70 @@ export default function VendorDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-l-4 border-l-green-600">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Productos Activos
               </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <Package className="h-5 w-5 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">0</div>
+              <p className="text-xs text-gray-600 mt-1">
                 En tu inventario
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-blue-600">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Ventas del Mes
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$0</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">$0</div>
+              <p className="text-xs text-gray-600 mt-1">
                 +0% del mes pasado
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-purple-600">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Órdenes Pendientes
               </CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <ShoppingCart className="h-5 w-5 text-purple-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">0</div>
+              <p className="text-xs text-gray-600 mt-1">
                 Por procesar
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-yellow-600">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Calificación
               </CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Star className="h-5 w-5 text-yellow-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0.0</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">0.0</div>
+              <p className="text-xs text-gray-600 mt-1">
                 0 reseñas
               </p>
             </CardContent>
@@ -251,6 +259,6 @@ export default function VendorDashboard() {
           </Card>
         </div>
       </div>
-    </div>
+    </VendorDashboardLayout>
   )
 }

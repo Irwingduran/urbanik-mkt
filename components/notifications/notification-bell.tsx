@@ -58,7 +58,10 @@ const notificationIcons = {
   PRODUCT_REVIEW: Star,
   PRICE_ALERT: DollarSign,
   MARKETING: Leaf,
-  SYSTEM: AlertTriangle
+  SYSTEM: AlertTriangle,
+  VENDOR_APPROVED: CheckCircle,
+  VENDOR_REJECTED: XCircle,
+  VENDOR_IN_REVIEW: Clock
 }
 
 const notificationColors = {
@@ -73,7 +76,10 @@ const notificationColors = {
   PRODUCT_REVIEW: 'text-yellow-500',
   PRICE_ALERT: 'text-green-600',
   MARKETING: 'text-green-600',
-  SYSTEM: 'text-gray-600'
+  SYSTEM: 'text-gray-600',
+  VENDOR_APPROVED: 'text-green-600',
+  VENDOR_REJECTED: 'text-red-600',
+  VENDOR_IN_REVIEW: 'text-yellow-600'
 }
 
 export default function NotificationBell() {

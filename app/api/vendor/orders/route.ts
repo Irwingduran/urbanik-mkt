@@ -20,20 +20,11 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    // Get vendor ID
-    const vendor = await prisma.vendor.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true }
-    })
-
-    if (!vendor) {
-      return NextResponse.json({ error: "Vendor not found" }, { status: 404 })
-    }
-
+    const vendorUserId = session.user.id
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { vendorId: vendor.id }
+    const where: any = { vendorUserId: vendorUserId }
 
     if (status) {
       where.status = status
@@ -102,7 +93,7 @@ export async function GET(request: NextRequest) {
       // Get counts by status for vendor dashboard
       prisma.order.groupBy({
         by: ["status"],
-        where: { vendorId: vendor.id },
+        where: { vendorUserId: vendorUserId },
         _count: {
           status: true
         }
@@ -112,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Calculate totals and metrics
     const totalRevenue = await prisma.order.aggregate({
       where: {
-        vendorId: vendor.id,
+        vendorUserId: vendorUserId,
         status: { in: ["DELIVERED", "SHIPPED"] }
       },
       _sum: {
@@ -122,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     const monthlyRevenue = await prisma.order.aggregate({
       where: {
-        vendorId: vendor.id,
+        vendorUserId: vendorUserId,
         status: { in: ["DELIVERED", "SHIPPED"] },
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -181,22 +172,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { orderId, action, data } = body
-
-    // Get vendor ID
-    const vendor = await prisma.vendor.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true }
-    })
-
-    if (!vendor) {
-      return NextResponse.json({ error: "Vendor not found" }, { status: 404 })
-    }
+    const vendorUserId = session.user.id
 
     // Verify order belongs to vendor
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
-        vendorId: vendor.id
+        vendorUserId: vendorUserId
       }
     })
 

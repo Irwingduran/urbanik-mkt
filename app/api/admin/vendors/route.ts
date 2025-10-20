@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
 
-// GET /api/admin/vendors - List all vendors with pagination
+// GET /api/admin/vendors - List all vendor applications with pagination
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,52 +15,52 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
-    const status = searchParams.get("status") // active, suspended, pending
+    const status = searchParams.get("status") // PENDING, IN_REVIEW, APPROVED, REJECTED
     const search = searchParams.get("search")
 
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {
-      role: "VENDOR"
+    const where: any = {}
+
+    if (status) {
+      where.status = status.toUpperCase()
     }
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { vendor: { companyName: { contains: search, mode: "insensitive" } } }
+        { companyName: { contains: search, mode: "insensitive" } },
+        { user: { name: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } }
       ]
     }
 
-    const [vendors, totalCount] = await Promise.all([
-      prisma.user.findMany({
+    const [applications, totalCount] = await Promise.all([
+      prisma.vendorApplication.findMany({
         where,
         skip,
         take: limit,
         include: {
-          vendor: {
-            include: {
-              _count: {
-                select: {
-                  products: true,
-                  orders: true
-                }
-              }
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              createdAt: true
             }
           }
         },
         orderBy: { createdAt: "desc" }
       }),
 
-      prisma.user.count({ where })
+      prisma.vendorApplication.count({ where })
     ])
 
     const totalPages = Math.ceil(totalCount / limit)
 
     return NextResponse.json({
       success: true,
-      data: vendors,
+      data: applications,
       meta: {
         total: totalCount,
         page,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/admin/vendors - Create/Approve vendor
+// POST /api/admin/vendors - Approve/Reject vendor application
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -90,57 +90,160 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, action } = body // action: approve, reject, suspend
+    const { applicationId, action, rejectionReason, internalNotes } = body
+    // action: approve, reject, review
 
-    if (!userId || !action) {
+    if (!applicationId || !action) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { vendor: true }
+    // Get the application
+    const application = await prisma.vendorApplication.findUnique({
+      where: { id: applicationId },
+      include: { user: true }
     })
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!application) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 })
     }
 
-    let updatedUser
+    const adminUser = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    })
+
+    if (!adminUser) {
+      return NextResponse.json({ error: "Admin user not found" }, { status: 404 })
+    }
+
+    let updatedApplication
+    let vendorProfile
 
     switch (action) {
       case "approve":
-        updatedUser = await prisma.user.update({
-          where: { id: userId },
+        // Update application status
+        updatedApplication = await prisma.vendorApplication.update({
+          where: { id: applicationId },
           data: {
-            role: "VENDOR",
-            // Add approval timestamp if needed
+            status: "APPROVED",
+            reviewedBy: adminUser.id,
+            reviewedAt: new Date(),
+            internalNotes: internalNotes || null
+          }
+        })
+
+        // Grant VENDOR role to user
+        await prisma.userRole.upsert({
+          where: {
+            userId_role: {
+              userId: application.userId,
+              role: "VENDOR"
+            }
           },
-          include: { vendor: true }
+          create: {
+            userId: application.userId,
+            role: "VENDOR",
+            grantedBy: adminUser.id,
+            active: true
+          },
+          update: {
+            active: true,
+            grantedBy: adminUser.id
+          }
+        })
+
+        // Create VendorProfile
+        vendorProfile = await prisma.vendorProfile.upsert({
+          where: { userId: application.userId },
+          create: {
+            userId: application.userId,
+            companyName: application.companyName,
+            businessType: application.businessType,
+            description: application.description,
+            website: application.website,
+            businessPhone: application.businessPhone,
+            businessAddress: application.businessAddress,
+            taxId: application.taxId,
+            verificationStatus: "VERIFIED",
+            verifiedAt: new Date(),
+            verifiedBy: adminUser.id,
+            onboardingStatus: "APPROVED",
+            active: true,
+            certifications: (application.documents as any)?.certifications || []
+          },
+          update: {
+            companyName: application.companyName,
+            businessType: application.businessType,
+            description: application.description,
+            website: application.website,
+            businessPhone: application.businessPhone,
+            businessAddress: application.businessAddress,
+            verificationStatus: "VERIFIED",
+            verifiedAt: new Date(),
+            verifiedBy: adminUser.id,
+            active: true
+          }
+        })
+
+        // Create notification for vendor approval
+        await prisma.notification.create({
+          data: {
+            userId: application.userId,
+            type: "VENDOR_APPROVED",
+            title: "¡Solicitud Aprobada! 🎉",
+            message: `¡Felicitaciones! Tu solicitud para vender en Urbanika ha sido aprobada. Ya puedes comenzar a agregar productos y gestionar tu tienda.`,
+            actionUrl: "/dashboard/vendor",
+            read: false
+          }
         })
         break
 
       case "reject":
-        // Keep as USER role, maybe add rejection reason
-        updatedUser = await prisma.user.update({
-          where: { id: userId },
+        updatedApplication = await prisma.vendorApplication.update({
+          where: { id: applicationId },
           data: {
-            role: "USER",
-          },
-          include: { vendor: true }
+            status: "REJECTED",
+            reviewedBy: adminUser.id,
+            reviewedAt: new Date(),
+            rejectionReason: rejectionReason || "No especificado",
+            internalNotes: internalNotes || null
+          }
+        })
+
+        // Create notification for vendor rejection
+        await prisma.notification.create({
+          data: {
+            userId: application.userId,
+            type: "VENDOR_REJECTED",
+            title: "Solicitud No Aprobada",
+            message: `Lamentablemente tu solicitud para ser vendedor no fue aprobada. Razón: ${rejectionReason || "No especificada"}. Puedes volver a aplicar después de revisar los requisitos.`,
+            actionUrl: "/onboarding",
+            read: false
+          }
         })
         break
 
-      case "suspend":
-        // Add suspended status logic
-        updatedUser = await prisma.user.update({
-          where: { id: userId },
+      case "review":
+        updatedApplication = await prisma.vendorApplication.update({
+          where: { id: applicationId },
           data: {
-            // Add suspended field to schema
-          },
-          include: { vendor: true }
+            status: "IN_REVIEW",
+            internalNotes: internalNotes || null
+          }
+        })
+
+        // Create notification for in review status
+        await prisma.notification.create({
+          data: {
+            userId: application.userId,
+            type: "VENDOR_IN_REVIEW",
+            title: "Solicitud en Revisión",
+            message: `Tu solicitud para ser vendedor está siendo revisada por nuestro equipo. Te notificaremos pronto con una decisión.`,
+            actionUrl: "/dashboard",
+            read: false
+          }
         })
         break
 
@@ -150,8 +253,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: updatedUser,
-      message: `Vendor ${action}ed successfully`
+      data: updatedApplication,
+      vendorProfile: vendorProfile || null,
+      message: action === "approve"
+        ? "Solicitud aprobada exitosamente"
+        : action === "reject"
+        ? "Solicitud rechazada"
+        : "Solicitud marcada como en revisión"
     })
 
   } catch (error) {

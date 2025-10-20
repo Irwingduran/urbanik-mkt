@@ -16,15 +16,7 @@ export async function GET(request: NextRequest) {
     const timeRange = searchParams.get("timeRange") || "30" // days
     const granularity = searchParams.get("granularity") || "day" // day, week, month
 
-    // Get vendor ID
-    const vendor = await prisma.vendor.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true }
-    })
-
-    if (!vendor) {
-      return NextResponse.json({ error: "Vendor not found" }, { status: 404 })
-    }
+    const vendorUserId = session.user.id
 
     const daysBack = parseInt(timeRange)
     const startDate = new Date()
@@ -38,7 +30,7 @@ export async function GET(request: NextRequest) {
         SUM("total")::float as revenue,
         AVG("total")::float as avg_order_value
       FROM "orders"
-      WHERE "vendorId" = ${vendor.id}
+      WHERE "vendorUserId" = ${vendorUserId}
         AND "createdAt" >= ${startDate}
         AND "status" IN ('DELIVERED', 'SHIPPED')
       GROUP BY DATE_TRUNC(${granularity}, "createdAt")
@@ -54,7 +46,7 @@ export async function GET(request: NextRequest) {
     const statusDistribution = await prisma.order.groupBy({
       by: ["status"],
       where: {
-        vendorId: vendor.id,
+        vendorUserId: vendorUserId,
         createdAt: { gte: startDate }
       },
       _count: { status: true },
@@ -74,7 +66,7 @@ export async function GET(request: NextRequest) {
       FROM "order_items" oi
       JOIN "orders" o ON oi."orderId" = o."id"
       JOIN "products" p ON oi."productId" = p."id"
-      WHERE o."vendorId" = ${vendor.id}
+      WHERE o."vendorUserId" = ${vendorUserId}
         AND o."createdAt" >= ${startDate}
         AND o."status" IN ('DELIVERED', 'SHIPPED', 'PROCESSING')
       GROUP BY p."id", p."name", p."images", p."price"
@@ -99,7 +91,7 @@ export async function GET(request: NextRequest) {
       FROM (
         SELECT "userId", COUNT(*)::int as order_count
         FROM "orders"
-        WHERE "vendorId" = ${vendor.id}
+        WHERE "vendorUserId" = ${vendorUserId}
           AND "createdAt" >= ${startDate}
           AND "status" IN ('DELIVERED', 'SHIPPED')
         GROUP BY "userId"
@@ -119,7 +111,7 @@ export async function GET(request: NextRequest) {
     const [currentMonthStats, lastMonthStats] = await Promise.all([
       prisma.order.aggregate({
         where: {
-          vendorId: vendor.id,
+          vendorUserId: vendorUserId,
           createdAt: { gte: currentMonth },
           status: { in: ["DELIVERED", "SHIPPED"] }
         },
@@ -128,7 +120,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.order.aggregate({
         where: {
-          vendorId: vendor.id,
+          vendorUserId: vendorUserId,
           createdAt: {
             gte: lastMonth,
             lt: currentMonth
@@ -158,7 +150,7 @@ export async function GET(request: NextRequest) {
       FROM "order_items" oi
       JOIN "orders" o ON oi."orderId" = o."id"
       JOIN "products" p ON oi."productId" = p."id"
-      WHERE o."vendorId" = ${vendor.id}
+      WHERE o."vendorUserId" = ${vendorUserId}
         AND o."createdAt" >= ${startDate}
         AND o."status" IN ('DELIVERED', 'SHIPPED')
     ` as Array<{

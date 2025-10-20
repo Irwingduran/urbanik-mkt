@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         include: {
-          vendor: {
+          vendorProfile: {
             select: {
               id: true,
               companyName: true,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
         inStock: true
       },
       include: {
-        vendor: true
+        vendorProfile: true
       }
     })
 
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     // Group items by vendor (for multi-vendor support)
     const itemsByVendor = items.reduce((acc: Record<string, any[]>, item: any) => {
       const product = products.find((p: any) => p.id === item.productId)!
-      const vendorId = product.vendorId
+      const vendorId = product.vendorUserId
 
       if (!acc[vendorId]) {
         acc[vendorId] = []
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         const order = await prisma.order.create({
           data: {
             userId: session.user.id,
-            vendorId,
+            vendorUserId: vendorId,
             status: "PENDING",
             subtotal,
             tax,
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
                 product: true
               }
             },
-            vendor: {
+            vendorProfile: {
               select: {
                 companyName: true,
                 user: { select: { name: true } }
@@ -257,11 +257,10 @@ export async function POST(request: NextRequest) {
         )
 
         // Update vendor stats
-        await prisma.vendor.update({
-          where: { id: vendorId },
+        await prisma.vendorProfile.update({
+          where: { userId: vendorId },
           data: {
-            totalSales: { increment: 1 },
-            monthlyRevenue: { increment: total }
+            totalOrders: { increment: 1 }
           }
         })
 

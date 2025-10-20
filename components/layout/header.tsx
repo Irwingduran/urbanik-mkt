@@ -16,9 +16,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useVendorStatus } from "@/hooks/useVendorStatus"
 import { CartCounter } from "@/components/cart/CartCounter"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
-import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart } from "lucide-react"
+import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart, Clock, CheckCircle } from "lucide-react"
 
 // Types para mejor TypeScript support
 interface User {
@@ -40,9 +41,12 @@ interface AuthState {
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
-  
+
   // Usar SOLO el custom auth hook que ya maneja la sesión correctamente
   const { user, isAuthenticated, isLoading, role } = useAuth()
+
+  // Get vendor status to conditionally show "Vender" button
+  const { status: vendorStatus, hasVendorRole } = useVendorStatus()
 
   // Simplificar el estado local
   const authState = {
@@ -100,9 +104,55 @@ export default function Header() {
     setIsMenuOpen(false)
   }, [pathname])
 
+  // Determine vendor button state based on application status
+  const getVendorButton = () => {
+    // If authenticated user
+    if (isAuthenticated) {
+      // Priority 1: VENDOR approved - show link to vendor dashboard
+      if (hasVendorRole || vendorStatus === 'approved') {
+        return {
+          name: "Mi Tienda",
+          href: "/dashboard/vendor",
+          icon: Store,
+          className: "text-blue-600 hover:text-blue-700 font-semibold"
+        }
+      }
+
+      // Priority 2: PENDING or IN_REVIEW - show status button
+      if (vendorStatus === 'pending' || vendorStatus === 'in_review') {
+        return {
+          name: "Verificando datos",
+          href: "/dashboard",
+          icon: Clock,
+          className: "text-yellow-600 hover:text-yellow-700 font-medium"
+        }
+      }
+
+      // Priority 3: REJECTED or NOT_APPLIED - show onboarding button
+      if (vendorStatus === 'rejected' || vendorStatus === 'not_applied') {
+        return {
+          name: "Vender",
+          href: "/onboarding",
+          icon: Store,
+          className: "text-gray-700 hover:text-green-600 font-medium"
+        }
+      }
+    }
+
+    // For guest users - show vender button
+    return {
+      name: "Vender",
+      href: "/onboarding",
+      icon: Store,
+      className: "text-gray-700 hover:text-green-600 font-medium"
+    }
+  }
+
+  const vendorButton = getVendorButton()
+
   // Navigation items con validación de roles
   const navigation = [
-    { name: "Vender", href: "/onboarding", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
+    { ...vendorButton, roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Promociones", href: "/promotions", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Lo más vendido", href: "/best-sellers", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
   ]
@@ -176,19 +226,23 @@ export default function Header() {
 
           {/* Navigation - Desktop */}
           <nav className="hidden lg:flex items-center space-x-6">
-            {filteredNavigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`font-medium transition-colors ${
-                  pathname === item.href 
-                    ? "text-green-600" 
-                    : "text-gray-700 hover:text-green-600"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {filteredNavigation.map((item) => {
+              const ItemIcon = item.icon
+              const isActive = pathname === item.href
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 font-medium transition-colors ${
+                    item.className || (isActive ? "text-green-600" : "text-gray-700 hover:text-green-600")
+                  }`}
+                >
+                  {ItemIcon && <ItemIcon className="w-4 h-4" />}
+                  {item.name}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* Actions */}
@@ -311,7 +365,7 @@ export default function Header() {
                     Iniciar Sesión
                   </Button>
                 </Link>
-                <Link href="/auth/register">
+                <Link href="/auth/signup">
                   <Button size="sm" className="bg-green-600 hover:bg-green-700">
                     Registrarse
                   </Button>
@@ -353,20 +407,24 @@ export default function Header() {
 
             {/* Mobile Navigation */}
             <nav className="space-y-2 mb-4">
-              {filteredNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`block px-3 py-2 rounded-md transition-colors ${
-                    pathname === item.href
-                      ? "text-green-600 bg-green-50"
-                      : "text-gray-700 hover:text-green-600 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {filteredNavigation.map((item) => {
+                const ItemIcon = item.icon
+                const isActive = pathname === item.href
+
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                      item.className || (isActive ? "text-green-600 bg-green-50" : "text-gray-700 hover:text-green-600 hover:bg-gray-50")
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {ItemIcon && <ItemIcon className="w-4 h-4" />}
+                    {item.name}
+                  </Link>
+                )
+              })}
             </nav>
 
             {/* Mobile User Section */}
@@ -475,7 +533,7 @@ export default function Header() {
                     Iniciar Sesión
                   </Link>
                   <Link
-                    href="/auth/register"
+                    href="/auth/signup"
                     className="block w-full text-center py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >

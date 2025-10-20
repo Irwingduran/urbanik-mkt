@@ -77,6 +77,7 @@ export default withAuth(
             pathname.startsWith("/marketplace") ||
             pathname.startsWith("/products") ||
             pathname.startsWith("/become-vendor") ||
+            pathname.startsWith("/onboarding") ||
             pathname.startsWith("/api/auth") ||
             pathname.startsWith("/api/public") ||
             pathname.startsWith("/api/products")) {

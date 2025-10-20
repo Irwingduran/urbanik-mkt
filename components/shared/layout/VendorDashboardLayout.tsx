@@ -10,11 +10,9 @@ import {
   BarChart3,
   Settings,
   Store,
-  Heart,
-  User,
-  Shield,
-  Leaf,
   FileText,
+  User,
+  Leaf,
   Bell,
   LogOut,
   X,
@@ -22,7 +20,8 @@ import {
   AlertCircle,
   Info,
   Menu,
-  Clock
+  Plus,
+  TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,17 +36,10 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useNotifications } from '@/hooks/useNotifications'
-import { useVendorStatus } from '@/hooks/useVendorStatus'
 
 // ============================================================================
 // TYPES & CONSTANTS
 // ============================================================================
-
-export enum UserRole {
-  USER = 'USER',
-  VENDOR = 'VENDOR',
-  ADMIN = 'ADMIN'
-}
 
 export enum NotificationType {
   SUCCESS = 'success',
@@ -56,144 +48,78 @@ export enum NotificationType {
   ERROR = 'error'
 }
 
-interface LegacyNotification {
-  id: number
-  type: NotificationType
-  title: string
-  message: string
-  time: string
-  read: boolean
-}
-
 interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   badge?: string | number
-  roles: UserRole[]
   ariaLabel?: string
 }
 
-interface DashboardLayoutProps {
+interface VendorDashboardLayoutProps {
   children: ReactNode
   className?: string
 }
 
-interface DashboardHeaderProps {
+interface VendorDashboardHeaderProps {
   title: string
   subtitle?: string
-  actions?: ReactNode
+  action?: ReactNode
   breadcrumbs?: { label: string; href?: string }[]
 }
 
 // ============================================================================
-// NAVIGATION CONFIGURATION
+// NAVIGATION CONFIGURATION FOR VENDORS
 // ============================================================================
 
-const navigationItems: NavItem[] = [
-  // User Navigation
+const vendorNavigationItems: NavItem[] = [
   {
-    label: 'Inicio',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    roles: [UserRole.USER],
-    ariaLabel: 'Ir a inicio'
-  },
-  {
-    label: 'Ordenes',
-    href: '/dashboard/orders',
-    icon: ShoppingCart,
-    roles: [UserRole.USER],
-    ariaLabel: 'Ver mis ordenes'
-  },
-  {
-    label: 'Lista de deseos',
-    href: '/dashboard/wishlist',
-    icon: Heart,
-    roles: [UserRole.USER],
-    ariaLabel: 'Ver lista de deseos'
-  },
-  {
-    label: 'Impacto',
-    href: '/dashboard/impact',
-    icon: Leaf,
-    roles: [UserRole.USER],
-    ariaLabel: 'Ver mi impacto ambiental'
-  },
-  {
-    label: 'Perfil',
-    href: '/dashboard/profile',
-    icon: User,
-    roles: [UserRole.USER],
-    ariaLabel: 'Ver mi perfil'
-  },
-
-  // Vendor Navigation
-  {
-    label: 'Panel de control',
+    label: 'Panel de Control',
     href: '/dashboard/vendor',
     icon: LayoutDashboard,
-    roles: [UserRole.VENDOR],
-    ariaLabel: 'Panel de control del vendedor'
+    ariaLabel: 'Ir al panel de control'
   },
   {
-    label: 'Productos',
+    label: 'Inventario',
     href: '/dashboard/vendor/inventory',
     icon: Package,
-    roles: [UserRole.VENDOR],
-    ariaLabel: 'Gestionar productos'
+    ariaLabel: 'Gestionar inventario'
   },
   {
     label: 'Pedidos',
     href: '/dashboard/vendor/orders',
     icon: ShoppingCart,
-    roles: [UserRole.VENDOR],
     ariaLabel: 'Ver pedidos'
+  },
+  {
+    label: 'Clientes',
+    href: '/dashboard/vendor/customers',
+    icon: Users,
+    ariaLabel: 'Ver clientes'
   },
   {
     label: 'Analíticas',
     href: '/dashboard/vendor/analytics',
     icon: BarChart3,
-    roles: [UserRole.VENDOR],
     ariaLabel: 'Ver analíticas'
   },
   {
-    label: 'Perfil de la tienda',
-    href: '/dashboard/vendor/profile',
-    icon: Store,
-    roles: [UserRole.VENDOR],
-    ariaLabel: 'Editar perfil de la tienda'
-  },
-  {
-    label: 'Envíos',
-    href: '/dashboard/vendor/shipping',
+    label: 'Reportes',
+    href: '/dashboard/vendor/reports',
     icon: FileText,
-    roles: [UserRole.VENDOR],
-    ariaLabel: 'Gestionar envíos'
-  },
-
-  // Admin Navigation - Essential only
-  {
-    label: 'Panel de Control',
-    href: '/dashboard/admin',
-    icon: LayoutDashboard,
-    roles: [UserRole.ADMIN],
-    ariaLabel: 'Panel de control del administrador'
+    ariaLabel: 'Ver reportes'
   },
   {
-    label: 'Vendedores',
-    href: '/dashboard/admin/vendors',
+    label: 'Perfil de Tienda',
+    href: '/dashboard/vendor/settings',
     icon: Store,
-    roles: [UserRole.ADMIN],
-    ariaLabel: 'Gestionar vendedores'
-  },
+    ariaLabel: 'Configurar tienda'
+  }
 ]
 
 // ============================================================================
 // CUSTOM HOOKS
 // ============================================================================
-
-// Removed: useNotifications hook is now imported from @/hooks/useNotifications
 
 const useSidebar = () => {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -221,24 +147,6 @@ const useSidebar = () => {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-const getRoleDisplayName = (role: string): string => {
-  const roleMap: Record<string, string> = {
-    [UserRole.USER]: 'Dashboard',
-    [UserRole.VENDOR]: 'Dashboard Ventas',
-    [UserRole.ADMIN]: 'Admin Dashboard'
-  }
-  return roleMap[role] || 'Dashboard'
-}
-
-const getRoleIcon = (role: string): React.ComponentType<{ className?: string }> => {
-  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    [UserRole.USER]: User,
-    [UserRole.VENDOR]: Store,
-    [UserRole.ADMIN]: Shield
-  }
-  return iconMap[role] || LayoutDashboard
-}
 
 const getNotificationIcon = (type: NotificationType) => {
   const iconMap: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
@@ -269,7 +177,6 @@ const NotificationItem: React.FC<{
   onMarkAsRead: (id: string) => void
   onDelete: (id: string) => void
 }> = ({ notification, onMarkAsRead, onDelete }) => {
-  // Map notification types to legacy types for icons
   const getLegacyType = (type: string): NotificationType => {
     if (type.includes('SUCCESS') || type.includes('DELIVERED') || type.includes('APPROVED')) {
       return NotificationType.SUCCESS
@@ -295,7 +202,6 @@ const NotificationItem: React.FC<{
         if (!notification.read) {
           onMarkAsRead(notification.id)
         }
-        // Navigate if there's an action URL
         if (notification.actionUrl) {
           window.location.href = notification.actionUrl
         }
@@ -366,9 +272,9 @@ const NotificationPopover: React.FC<{
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="flex-1 relative"
           aria-label={`Notificaciones${unreadCount > 0 ? `, ${unreadCount} sin leer` : ''}`}
         >
@@ -419,21 +325,18 @@ const NotificationPopover: React.FC<{
 }
 
 const SidebarHeader: React.FC<{
-  role: string
   userName?: string
   userEmail?: string
-}> = ({ role, userName, userEmail }) => {
-  const RoleIcon = getRoleIcon(role)
-  
+}> = ({ userName, userEmail }) => {
   return (
     <div className="p-6 border-b border-gray-200">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-          <RoleIcon className="w-5 h-5 text-green-600" />
+          <Store className="w-5 h-5 text-green-600" />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-gray-900 truncate">
-            {getRoleDisplayName(role)}
+            Dashboard Vendedor
           </h2>
           <p className="text-xs text-gray-500 truncate">
             {userName || userEmail}
@@ -444,54 +347,17 @@ const SidebarHeader: React.FC<{
   )
 }
 
-const VendorBanner: React.FC = () => {
-  const { status: vendorStatus, hasVendorRole } = useVendorStatus()
-
-  // APPROVED - Show "Mi Tienda" button to access vendor dashboard
-  if (hasVendorRole || vendorStatus === 'approved') {
-    return (
-      <Link
-        href="/dashboard/vendor"
-        className="flex flex-col mb-4 bg-gradient-to-r from-blue-600 to-indigo-700 p-3 rounded-lg text-white hover:from-blue-700 hover:to-indigo-800 transition-all cursor-pointer no-underline shadow-md"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <Store className="w-4 h-4" />
-          <p className="text-xs font-semibold">Mi Tienda</p>
-        </div>
-        <p className="text-xs opacity-90">Accede a tu panel de vendedor</p>
-      </Link>
-    )
-  }
-
-  // PENDING or IN_REVIEW - Show "Verificando datos" button
-  if (vendorStatus === 'pending' || vendorStatus === 'in_review') {
-    return (
-      <Link
-        href="/dashboard"
-        className="flex flex-col mb-4 bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-lg text-white hover:from-yellow-600 hover:to-orange-600 transition-all cursor-pointer no-underline"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <Clock className="w-4 h-4" />
-          <p className="text-xs font-semibold">Verificando datos</p>
-        </div>
-        <p className="text-xs opacity-90">Tu solicitud está siendo revisada</p>
-      </Link>
-    )
-  }
-
-  // REJECTED or NOT_APPLIED - Show "¿Quieres vender?" button
+const BackToUserDashboard: React.FC = () => {
   return (
     <Link
-      href="/onboarding"
-      className="flex flex-col mb-4 bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-lg text-white hover:from-blue-600 hover:to-purple-700 transition-all cursor-pointer no-underline"
+      href="/dashboard"
+      className="flex flex-col mb-4 bg-gradient-to-r from-blue-600 to-indigo-700 p-3 rounded-lg text-white hover:from-blue-700 hover:to-indigo-800 transition-all cursor-pointer no-underline shadow-md"
     >
       <div className="flex items-center gap-2 mb-1">
-        <Store className="w-4 h-4" />
-        <p className="text-xs font-semibold">¿Quieres vender?</p>
+        <User className="w-4 h-4" />
+        <p className="text-xs font-semibold">Dashboard de Usuario</p>
       </div>
-      <p className="text-xs opacity-90">
-        {vendorStatus === 'rejected' ? 'Vuelve a aplicar' : 'Conviértete en vendedor'}
-      </p>
+      <p className="text-xs opacity-90">Volver a mi cuenta</p>
     </Link>
   )
 }
@@ -502,7 +368,7 @@ const NavigationItems: React.FC<{
   onNavigate?: () => void
 }> = ({ items, currentPath, onNavigate }) => {
   return (
-    <nav className="space-y-2" role="navigation" aria-label="Navegación principal">
+    <nav className="space-y-2" role="navigation" aria-label="Navegación de vendedor">
       {items.map((item) => {
         const isActive = currentPath === item.href
         const Icon = item.icon
@@ -541,29 +407,12 @@ const NavigationItems: React.FC<{
   )
 }
 
-const QuickActions: React.FC<{ role: string; onNavigate?: () => void }> = ({ role, onNavigate }) => {
-  const actions = useMemo(() => {
-    const actionMap: Record<string, { href: string; icon: React.ComponentType<{ className?: string }>; label: string; badge?: number }[]> = {
-      [UserRole.USER]: [
-        { href: '/marketplace', icon: Store, label: 'Explorar Productos' }
-      ],
-      [UserRole.VENDOR]: [
-        { href: '/dashboard/vendor/inventory?action=create', icon: Package, label: 'Agregar Producto' }
-      ],
-      [UserRole.ADMIN]: [
-        {
-          href: '/dashboard/admin/vendors?status=pending',
-          icon: Store,
-          label: 'Solicitudes Pendientes',
-          // TODO: Fetch real count from API
-          badge: undefined // Will be populated with real data
-        }
-      ]
-    }
-    return actionMap[role] || []
-  }, [role])
-
-  if (actions.length === 0) return null
+const QuickActions: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
+  const actions = [
+    { href: '/dashboard/vendor/inventory?action=create', icon: Plus, label: 'Agregar Producto' },
+    { href: '/dashboard/vendor/orders', icon: ShoppingCart, label: 'Ver Pedidos' },
+    { href: '/dashboard/vendor/analytics', icon: TrendingUp, label: 'Ver Analíticas' }
+  ]
 
   return (
     <div className="space-y-2">
@@ -574,14 +423,9 @@ const QuickActions: React.FC<{ role: string; onNavigate?: () => void }> = ({ rol
         const Icon = action.icon
         return (
           <Link key={action.href} href={action.href} className="no-underline" onClick={onNavigate}>
-            <Button variant="ghost" className="w-full justify-start relative">
+            <Button variant="ghost" className="w-full justify-start">
               <Icon className="w-4 h-4 mr-3" />
               <span className="flex-1 text-left">{action.label}</span>
-              {action.badge && action.badge > 0 && (
-                <Badge className="ml-2 bg-yellow-500 text-white">
-                  {action.badge}
-                </Badge>
-              )}
             </Button>
           </Link>
         )
@@ -599,7 +443,6 @@ const SidebarFooter: React.FC<{
   onSettings: () => void
   onSignOut: () => void
   isSigningOut: boolean
-  showNotifications: boolean // New prop to control notification visibility
 }> = ({
   notifications,
   unreadCount,
@@ -608,26 +451,22 @@ const SidebarFooter: React.FC<{
   onDelete,
   onSettings,
   onSignOut,
-  isSigningOut,
-  showNotifications
+  isSigningOut
 }) => {
   return (
     <div className="p-4 border-t border-gray-200 space-y-2">
       <div className="flex items-center gap-2">
-        {showNotifications && (
-          <NotificationPopover
-            notifications={notifications}
-            unreadCount={unreadCount}
-            onMarkAsRead={onMarkAsRead}
-            onMarkAllAsRead={onMarkAllAsRead}
-            onDelete={onDelete}
-          />
-        )}
+        <NotificationPopover
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={onMarkAsRead}
+          onMarkAllAsRead={onMarkAllAsRead}
+          onDelete={onDelete}
+        />
         <Button
           variant="ghost"
           size="sm"
           onClick={onSettings}
-          className={showNotifications ? '' : 'flex-1'}
           aria-label="Configuración"
         >
           <Settings className="w-4 h-4" />
@@ -651,23 +490,21 @@ const SidebarFooter: React.FC<{
 const Sidebar: React.FC<{
   session: any
   pathname: string
-  filteredNavItems: NavItem[]
   isOpen: boolean
   isMobile: boolean
   onClose: () => void
-}> = ({ session, pathname, filteredNavItems, isOpen, isMobile, onClose }) => {
+}> = ({ session, pathname, isOpen, isMobile, onClose }) => {
   const router = useRouter()
   const [isSigningOut, setIsSigningOut] = React.useState(false)
-  
+
   const {
     notifications,
     unreadCount,
     markAsRead,
     markAllAsRead,
     deleteNotification
-  } = useNotifications(true) // Enable auto-refresh
+  } = useNotifications(true)
 
-  // Wrapper to convert single ID to array for markAsRead
   const handleMarkAsRead = useCallback((id: string) => {
     markAsRead([id])
   }, [markAsRead])
@@ -683,17 +520,9 @@ const Sidebar: React.FC<{
   }, [])
 
   const handleSettings = useCallback(() => {
-    // Route to role-specific settings
-    const settingsPath = session.user.role === UserRole.ADMIN
-      ? '/dashboard/admin/settings'
-      : '/dashboard/settings'
-    router.push(settingsPath)
+    router.push('/dashboard/vendor/settings')
     if (isMobile) onClose()
-  }, [router, isMobile, onClose, session.user.role])
-
-  // Show vendor banner for USER and VENDOR roles (not ADMIN)
-  // The VendorBanner component itself will handle showing different states
-  const showVendorBanner = session.user.role === UserRole.USER || session.user.role === UserRole.VENDOR
+  }, [router, isMobile, onClose])
 
   return (
     <>
@@ -712,28 +541,26 @@ const Sidebar: React.FC<{
           "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out",
           isMobile && !isOpen && "-translate-x-full"
         )}
-        aria-label="Sidebar"
+        aria-label="Sidebar del vendedor"
       >
         <div className="flex flex-col h-full">
           <SidebarHeader
-            role={session.user.role}
             userName={session.user.name}
             userEmail={session.user.email}
           />
 
           <ScrollArea className="flex-1 p-4">
-            {showVendorBanner && <VendorBanner />}
+            <BackToUserDashboard />
 
             <NavigationItems
-              items={filteredNavItems}
+              items={vendorNavigationItems}
               currentPath={pathname}
               onNavigate={isMobile ? onClose : undefined}
             />
 
             <Separator className="my-4" />
 
-            <QuickActions 
-              role={session.user.role} 
+            <QuickActions
               onNavigate={isMobile ? onClose : undefined}
             />
           </ScrollArea>
@@ -747,7 +574,6 @@ const Sidebar: React.FC<{
             onSettings={handleSettings}
             onSignOut={handleSignOut}
             isSigningOut={isSigningOut}
-            showNotifications={session.user.role !== UserRole.ADMIN}
           />
         </div>
       </aside>
@@ -759,21 +585,13 @@ const Sidebar: React.FC<{
 // MAIN LAYOUT COMPONENT
 // ============================================================================
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+export const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({
   children,
   className
 }) => {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const { isOpen, isMobile, toggle, close } = useSidebar()
-
-  const filteredNavItems = useMemo(() => {
-    if (!session?.user?.role) return []
-
-    return navigationItems.filter(item =>
-      item.roles.includes(session.user.role as UserRole)
-    )
-  }, [session?.user?.role])
 
   // Loading state
   if (status === 'loading') {
@@ -799,7 +617,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             Acceso Denegado
           </h2>
           <p className="text-gray-600 mb-6">
-            Por favor, inicia sesión para acceder al dashboard.
+            Por favor, inicia sesión para acceder al panel de vendedor.
           </p>
           <Button
             onClick={() => window.location.href = '/login'}
@@ -832,7 +650,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Sidebar
         session={session}
         pathname={pathname}
-        filteredNavItems={filteredNavItems}
         isOpen={isOpen}
         isMobile={isMobile}
         onClose={close}
@@ -852,10 +669,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 // HEADER COMPONENT
 // ============================================================================
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+export const VendorDashboardHeader: React.FC<VendorDashboardHeaderProps> = ({
   title,
   subtitle,
-  actions,
+  action,
   breadcrumbs
 }) => {
   return (
@@ -888,9 +705,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <p className="text-sm sm:text-base text-gray-600 mt-1">{subtitle}</p>
           )}
         </div>
-        {actions && (
+        {action && (
           <div className="flex items-center gap-3 flex-shrink-0">
-            {actions}
+            {action}
           </div>
         )}
       </div>

@@ -1,9 +1,8 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Award, Sparkles, ArrowRight, Download, Share2, Trophy } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, Clock, Shield, FileCheck, Users, ArrowRight, Home } from "lucide-react"
 import Link from "next/link"
 
 interface CompletionProps {
@@ -13,156 +12,138 @@ interface CompletionProps {
 
 export default function Completion({ userType, formData }: CompletionProps) {
   const isVendor = userType === "vendor"
-
-  const nftData = isVendor
-    ? {
-        name: "Semilla Verde Empresarial",
-        description: "Tu primer NFT como proveedor sostenible certificado",
-        level: "Inicial",
-        nextEvolution: "Hoja Creciente (50 puntos REGEN)",
-        benefits: [
-          "Perfil verificado en marketplace",
-          "Acceso a herramientas de métricas",
-          "Comunidad de proveedores",
-          "Soporte prioritario",
-        ],
-      }
-    : {
-        name: "Explorador Verde",
-        description: "Tu primer NFT como comprador consciente",
-        level: "Inicial",
-        nextEvolution: "Guardián Eco (10 compras sostenibles)",
-        benefits: [
-          "Recomendaciones personalizadas",
-          "Seguimiento de impacto",
-          "Descuentos especiales",
-          "Comunidad eco-friendly",
-        ],
-      }
+  const userName = (formData.contactName as string) || (formData.companyName as string) || "Usuario"
 
   return (
-    <div className="text-center">
-      <div className="mb-8">
-        <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle className="w-12 h-12 text-white" />
+    <div className="text-center max-w-2xl mx-auto">
+      {/* Animated Icon */}
+      <div className="mb-4">
+        <div className="relative w-20 h-20 mx-auto">
+          {/* Spinning ring */}
+          <div className="absolute inset-0 border-4 border-green-200 rounded-full animate-spin border-t-green-600"></div>
+          {/* Center icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <Clock className="w-8 h-8 text-white" />
+            </div>
+          </div>
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Bienvenido a EcoTech! 🎉</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Tu cuenta ha sido creada exitosamente. Has recibido tu primer NFT de sostenibilidad y ya puedes comenzar a
-          explorar nuestro marketplace eco-friendly.
-        </p>
       </div>
 
-      {/* NFT Card */}
-      <Card className="max-w-md mx-auto mb-8 border-2 border-green-200 shadow-lg">
+      {/* Main Title */}
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Solicitud Recibida!</h2>
+      <p className="text-sm text-gray-600 mb-6">
+        Estamos validando tu información
+      </p>
+
+      {/* Status Card */}
+      <Card className="mb-6 border-2 border-green-100">
         <CardContent className="p-6">
-          <div className="relative mb-6">
-            <div className="w-32 h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Award className="w-16 h-16 text-white" />
+          <div className="space-y-4">
+            {/* Greeting */}
+            <div className="pb-4 border-b border-gray-100">
+              <p className="text-base text-gray-700">
+                Hola <span className="font-semibold text-green-700">{userName}</span>, gracias por completar tu registro.
+              </p>
             </div>
-            <Badge className="absolute top-0 right-12 bg-yellow-500 text-yellow-900">
-              <Sparkles className="w-3 h-3 mr-1" />
-              NUEVO
-            </Badge>
+
+            {/* Status Items */}
+            <div className="space-y-3 text-left">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-900">Datos Recibidos</h4>
+                  <p className="text-xs text-gray-600">Tu información ha sido enviada correctamente</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-blue-600 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-900">Validación en Proceso</h4>
+                  <p className="text-xs text-gray-600">Nuestro equipo está revisando tus credenciales</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <FileCheck className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-900">Verificación de Certificaciones</h4>
+                  <p className="text-xs text-gray-600">Validamos tus certificados de sostenibilidad</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Users className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-900">Aprobación Final</h4>
+                  <p className="text-xs text-gray-600">Te notificaremos cuando tu cuenta esté activa</p>
+                </div>
+              </div>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{nftData.name}</h3>
-          <p className="text-sm text-gray-600 mb-4">{nftData.description}</p>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500">Nivel:</span>
-              <Badge className="bg-green-100 text-green-800">{nftData.level}</Badge>
+      {/* What's Next Section */}
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-0">
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-sm text-gray-900 mb-2">¿Qué sigue?</h3>
+          <div className="space-y-2 text-xs text-gray-700 text-left">
+            <div className="flex items-start gap-2">
+              <span className="text-green-600 font-bold mt-0.5">1.</span>
+              <p>Recibirás un <strong>correo de confirmación</strong> con los próximos pasos</p>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500">Próxima evolución:</span>
-              <span className="text-xs text-blue-600 font-medium">{nftData.nextEvolution}</span>
+            <div className="flex items-start gap-2">
+              <span className="text-green-600 font-bold mt-0.5">2.</span>
+              <p>Nuestro equipo revisará tu solicitud en <strong>24-48 horas</strong></p>
             </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-center">
-              <Trophy className="w-4 h-4 mr-2 text-yellow-600" />
-              Beneficios Incluidos
-            </h4>
-            <ul className="text-sm text-gray-600 space-y-1">
-              {nftData.benefits.map((benefit, index) => (
-                <li key={index} className="flex items-center">
-                  <CheckCircle className="w-3 h-3 text-green-600 mr-2" />
-                  {benefit}
-                </li>
-              ))}
-            </ul>
+            <div className="flex items-start gap-2">
+              <span className="text-green-600 font-bold mt-0.5">3.</span>
+              <p>Una vez aprobado, podrás <strong>acceder a tu dashboard</strong> y comenzar a vender</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-green-600 font-bold mt-0.5">4.</span>
+              <p>Recibirás tu <strong>NFT de certificación</strong> como vendedor verificado</p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
-      <div className="space-y-4 mb-8">
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button className="bg-green-600 hover:bg-green-700 text-white px-8">
-            <Download className="w-4 h-4 mr-2" />
-            Descargar NFT
-          </Button>
-          <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 bg-transparent">
-            <Share2 className="w-4 h-4 mr-2" />
-            Compartir Logro
-          </Button>
-        </div>
-
-        <Link href="/dashboard">
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-12">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+        <Link href="/dashboard" className="flex-1 sm:flex-initial">
+          <Button
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            size="lg"
+          >
+            <ArrowRight className="w-4 h-4 mr-2" />
             Ir al Dashboard
-            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </Link>
+        <Link href="/" className="flex-1 sm:flex-initial">
+          <Button
+            variant="outline"
+            className="w-full border-green-600 text-green-600 hover:bg-green-50"
+            size="lg"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Volver al Inicio
           </Button>
         </Link>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-        <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-6 h-6 text-green-600" />
-            </div>
-            <h4 className="font-semibold text-gray-900 mb-2">{isVendor ? "Subir Productos" : "Explorar Productos"}</h4>
-            <p className="text-sm text-gray-600">
-              {isVendor ? "Comienza a vender tus productos sostenibles" : "Descubre miles de productos eco-friendly"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trophy className="w-6 h-6 text-blue-600" />
-            </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Mejorar REGEN SCORE</h4>
-            <p className="text-sm text-gray-600">
-              {isVendor ? "Actualiza tus métricas de sostenibilidad" : "Realiza compras sostenibles verificadas"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Award className="w-6 h-6 text-yellow-600" />
-            </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Únete a la Comunidad</h4>
-            <p className="text-sm text-gray-600">Conecta con otros miembros comprometidos con la sostenibilidad</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Welcome Message */}
-      <div className="mt-12 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl max-w-2xl mx-auto">
-        <h4 className="font-semibold text-gray-900 mb-2">🌱 Tu Journey Sostenible Comienza Ahora</h4>
-        <p className="text-sm text-gray-700">
-          {isVendor
-            ? `Hola ${formData.contactName || "Proveedor"}, estamos emocionados de tenerte en EcoTech. Tu compromiso con la sostenibilidad ayudará a construir un futuro más verde.`
-            : `Hola ${formData.firstName || "Usuario"}, gracias por elegir un estilo de vida sostenible. Cada compra que realices contribuirá a un planeta más saludable.`}
-        </p>
+      {/* Contact Info */}
+      <div className="mt-6 text-xs text-gray-500">
+        <p>¿Tienes preguntas? Contáctanos en <a href="mailto:soporte@urbanika.com" className="text-green-600 hover:underline">soporte@urbanika.com</a></p>
       </div>
     </div>
   )

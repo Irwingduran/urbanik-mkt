@@ -24,15 +24,8 @@ export async function GET(request: NextRequest) {
       }
       vendorId = requestedVendorId
     } else {
-      // Get vendor profile for current user
-      const vendor = await prisma.vendor.findUnique({
-        where: { userId: session.user.id }
-      })
-
-      if (!vendor) {
-        return NextResponse.json({ error: "Vendor profile not found" }, { status: 404 })
-      }
-      vendorId = vendor.id
+      // For regular vendors, use their user ID directly
+      vendorId = session.user.id
     }
 
     // Get vendor dashboard statistics
@@ -49,13 +42,13 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // Total products
       prisma.product.count({
-        where: { vendorId }
+        where: { vendorUserId: vendorId }
       }),
 
       // Active products
       prisma.product.count({
         where: {
-          vendorId,
+          vendorUserId: vendorId,
           active: true,
           inStock: true
         }
@@ -63,13 +56,13 @@ export async function GET(request: NextRequest) {
 
       // Total orders
       prisma.order.count({
-        where: { vendorId }
+        where: { vendorUserId: vendorId }
       }),
 
       // Pending orders
       prisma.order.count({
         where: {
-          vendorId,
+          vendorUserId: vendorId,
           status: {
             in: ["PENDING", "PROCESSING"]
           }
@@ -79,7 +72,7 @@ export async function GET(request: NextRequest) {
       // Monthly revenue (current month)
       prisma.order.aggregate({
         where: {
-          vendorId,
+          vendorUserId: vendorId,
           createdAt: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           },
@@ -93,7 +86,7 @@ export async function GET(request: NextRequest) {
       // Monthly order count
       prisma.order.count({
         where: {
-          vendorId,
+          vendorUserId: vendorId,
           createdAt: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
@@ -103,7 +96,7 @@ export async function GET(request: NextRequest) {
       // Low stock products
       prisma.product.findMany({
         where: {
-          vendorId,
+          vendorUserId: vendorId,
           active: true,
           OR: [
             { stock: { lte: prisma.product.fields.minStock } },
@@ -122,7 +115,7 @@ export async function GET(request: NextRequest) {
 
       // Recent orders
       prisma.order.findMany({
-        where: { vendorId },
+        where: { vendorUserId: vendorId },
         take: 10,
         orderBy: { createdAt: "desc" },
         include: {
@@ -141,7 +134,7 @@ export async function GET(request: NextRequest) {
 
       // Top selling products (by order items)
       prisma.product.findMany({
-        where: { vendorId },
+        where: { vendorUserId: vendorId },
         take: 5,
         include: {
           _count: {
@@ -163,8 +156,8 @@ export async function GET(request: NextRequest) {
     })).sort((a: any, b: any) => b.totalSold - a.totalSold)
 
     // Get vendor profile info
-    const vendorInfo = await prisma.vendor.findUnique({
-      where: { id: vendorId },
+    const vendorInfo = await prisma.vendorProfile.findUnique({
+      where: { userId: vendorId },
       include: {
         user: {
           select: { name: true, email: true }

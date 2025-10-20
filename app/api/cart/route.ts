@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       include: {
         product: {
           include: {
-            vendor: {
+            vendorProfile: {
               include: {
                 user: {
                   select: {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       quantity: item.quantity,
       maxStock: item.product.stock,
       maxOrderQuantity: item.product.maxOrderQuantity,
-      vendorName: item.product.vendor.companyName || item.product.vendor.user.name,
+      vendorName: item.product.vendorProfile.companyName || item.product.vendorProfile.user.name,
       regenScore: item.product.regenScore,
       inStock: item.product.stock > 0,
       total: item.product.price * item.quantity

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where: whereClause,
       include: {
-        vendor: {
+        vendorProfile: {
           include: {
             user: {
               select: {
@@ -102,11 +102,11 @@ export async function GET(request: NextRequest) {
       salesCount: product.salesCount,
       averageRating: product.averageRating,
       reviewCount: product.reviewCount,
-      vendor: {
-        id: product.vendor.id,
-        companyName: product.vendor.companyName,
-        name: product.vendor.user.name,
-        regenScore: product.vendor.regenScore
+      vendorProfile: {
+        id: product.vendorProfile.id,
+        companyName: product.vendorProfile.companyName,
+        name: product.vendorProfile.user.name,
+        regenScore: product.vendorProfile.regenScore
       },
       reviews: product.reviews.map((review: typeof product.reviews[0]) => ({
         id: review.id,
