@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Get platform statistics
+    // Get platform statistics (parallel aggregate queries)
     const [
       totalUsers,
       totalVendors,
@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
       totalOrders,
       pendingVendors,
       activeOrders,
-      monthlyRevenue
+      monthlyRevenue,
+      averageRegenScore,
+      nftDistributionRaw
     ] = await Promise.all([
       // Total users
       prisma.user.count(),
@@ -63,6 +65,19 @@ export async function GET(request: NextRequest) {
         _sum: {
           total: true
         }
+      }),
+
+      // Average regen score across active vendors (sustainability metric)
+      prisma.vendorProfile.aggregate({
+        where: { active: true },
+        _avg: { regenScore: true }
+      }),
+
+      // NFT distribution by level
+      prisma.vendorProfile.groupBy({
+        by: ['nftLevel'],
+        where: { active: true },
+        _count: { nftLevel: true }
       })
     ])
 
@@ -91,6 +106,12 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Transform distribution to key-value object
+    const nftDistribution = nftDistributionRaw.reduce<Record<string, number>>((acc, item) => {
+      acc[item.nftLevel] = item._count.nftLevel
+      return acc
+    }, {})
+
     return NextResponse.json({
       success: true,
       data: {
@@ -101,7 +122,9 @@ export async function GET(request: NextRequest) {
           totalOrders,
           pendingVendors,
           activeOrders,
-          monthlyRevenue: monthlyRevenue._sum.total || 0
+          monthlyRevenue: monthlyRevenue._sum.total || 0,
+          averageRegenScore: averageRegenScore._avg.regenScore || 0,
+          nftDistribution
         },
         recentActivity: recentOrders,
         topVendors

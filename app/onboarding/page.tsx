@@ -22,6 +22,8 @@ import NFTEducation from "@/components/onboarding/nft-education"
 import Completion from "@/components/onboarding/completion"
 import { useVendorStatus } from "@/hooks/useVendorStatus"
 
+// Steps muestran bloques macro; el formulario interno ahora incluye
+// sección adicional de Impacto Social & Bienestar Animal, reflejado en el título.
 const steps = [
   {
     id: "welcome",
@@ -31,9 +33,9 @@ const steps = [
   },
   {
     id: "form",
-    title: "Información",
+    title: "Información & Sostenibilidad",
     icon: Building2,
-    description: "Datos de tu negocio"
+    description: "Negocio, certificaciones, prácticas sociales y bienestar animal"
   },
   {
     id: "education",

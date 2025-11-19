@@ -19,7 +19,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useVendorStatus } from "@/hooks/useVendorStatus"
 import { CartCounter } from "@/components/cart/CartCounter"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
-import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart, Clock, CheckCircle } from "lucide-react"
+import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart, Clock, CheckCircle, Flag } from "lucide-react"
 
 // Types para mejor TypeScript support
 interface User {
@@ -36,6 +36,15 @@ interface AuthState {
   user: User | null
   role: UserRoleType
   isLoading: boolean
+}
+
+// Navegación: tipado consistente para evitar uniones incompatibles
+interface NavItem {
+  name: string
+  href: string
+  roles: (UserRoleType | 'GUEST')[]
+  icon?: React.ComponentType<{ className?: string }>
+  className?: string
 }
 
 export default function Header() {
@@ -151,7 +160,7 @@ export default function Header() {
   const vendorButton = getVendorButton()
 
   // Navigation items con validación de roles
-  const navigation = [
+  const navigation: NavItem[] = [
     { ...vendorButton, roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Promociones", href: "/promotions", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Lo más vendido", href: "/best-sellers", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
@@ -321,15 +330,27 @@ export default function Header() {
 
                   {/* Dashboard Admin - Solo si es ADMIN */}
                   {authState.role === 'ADMIN' && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/admin" className="flex items-start gap-3 cursor-pointer py-3">
-                        <Shield className="w-4 h-4 mt-0.5 text-purple-600" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-purple-600">Panel Admin</p>
-                          <p className="text-xs text-muted-foreground">Gestión del sistema</p>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/admin" className="flex items-start gap-3 cursor-pointer py-3">
+                          <Shield className="w-4 h-4 mt-0.5 text-purple-600" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-purple-600">Panel Admin</p>
+                            <p className="text-xs text-muted-foreground">Gestión del sistema</p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/admin/moderation" className="flex items-start gap-3 cursor-pointer py-3">
+                          <Flag className="w-4 h-4 mt-0.5 text-red-600" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-red-600">Moderación</p>
+                            <p className="text-xs text-muted-foreground">Gestionar reportes</p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
 
                   <DropdownMenuSeparator />
@@ -469,6 +490,14 @@ export default function Header() {
                       >
                         <Shield className="w-4 h-4 mr-3" />
                         Panel Admin
+                      </Link>
+                      <Link
+                        href="/dashboard/admin/moderation"
+                        className="flex items-center px-3 py-2 text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Flag className="w-4 h-4 mr-3" />
+                        Moderación
                       </Link>
                     </div>
                   )}

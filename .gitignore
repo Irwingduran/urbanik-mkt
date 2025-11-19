@@ -41,6 +41,18 @@ next-env.d.ts
 node_modules/
 .next/
 
-# documentation (except README.md)
+# documentation (except README.md and project docs)
 *.md
 !README.md
+!METRICAS_SOSTENIBILIDAD.md
+!FLUJOS_MARKETPLACE.md
+!ANALISIS_PROYECTO.md
+
+# Docker compose with credentials
+docker-compose.yml
+docker-compose.override.yml
+
+# uploads (user-generated content)
+/public/uploads/**/*
+!/public/uploads/.gitkeep
+!/public/uploads/.gitignore

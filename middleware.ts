@@ -51,6 +51,10 @@ export default withAuth(
 
       // Vendor API routes
       if (pathname.startsWith("/api/vendor")) {
+        // Allow onboarding endpoint for authenticated non-vendors (handled by route auth)
+        if (pathname === "/api/vendor/onboarding") {
+          return NextResponse.next()
+        }
         if (!hasAnyRole(userRoles, ["VENDOR", "ADMIN"])) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
         }

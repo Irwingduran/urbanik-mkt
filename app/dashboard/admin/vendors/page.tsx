@@ -2,12 +2,12 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
-import { DashboardLayout, DashboardHeader } from '@/components/shared/layout/DashboardLayout'
 import { VendorApplicationsTable } from '@/components/admin/VendorApplicationsTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Store, Clock, CheckCircle, XCircle } from 'lucide-react'
+import Link from 'next/link'
 
-export default async function AdminVendorsPage() {
+export default async function AdminVendorsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and is admin
@@ -15,9 +15,16 @@ export default async function AdminVendorsPage() {
     redirect('/dashboard')
   }
 
-  // Fetch initial data
+  const statusParam = typeof searchParams?.status === 'string' ? searchParams.status.toUpperCase() : undefined
+  const where: any = {}
+  if (statusParam && ['PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'].includes(statusParam)) {
+    where.status = statusParam
+  }
+
+  // Fetch initial data (respect searchParams.status when present)
   const [applications, totalCount, stats] = await Promise.all([
     prisma.vendorApplication.findMany({
+      where,
       take: 20,
       include: {
         user: {
@@ -32,7 +39,7 @@ export default async function AdminVendorsPage() {
       orderBy: { createdAt: 'desc' }
     }),
 
-    prisma.vendorApplication.count(),
+    prisma.vendorApplication.count({ where }),
 
     // Get stats for each status
     prisma.$transaction([
@@ -55,16 +62,7 @@ export default async function AdminVendorsPage() {
   }
 
   return (
-    <DashboardLayout>
-      <DashboardHeader
-        title="Gestión de Vendedores"
-        subtitle="Administra solicitudes de vendedores y aprueba nuevas tiendas"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard/admin' },
-          { label: 'Vendedores' }
-        ]}
-      />
-
+    <>
       <div className="p-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -125,8 +123,9 @@ export default async function AdminVendorsPage() {
         <VendorApplicationsTable
           initialApplications={JSON.parse(JSON.stringify(applications))}
           initialMeta={initialMeta}
+          initialStatusFilter={statusParam || 'all'}
         />
       </div>
-    </DashboardLayout>
+    </>
   )
 }

@@ -43,7 +43,10 @@ import {
   Globe,
   MapPin,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Leaf,
+  Award,
+  Users
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -81,16 +84,18 @@ interface VendorApplicationsTableProps {
     hasNext: boolean
     hasPrev: boolean
   }
+  initialStatusFilter?: string
 }
 
 export function VendorApplicationsTable({
   initialApplications,
-  initialMeta
+  initialMeta,
+  initialStatusFilter
 }: VendorApplicationsTableProps) {
   const [applications, setApplications] = useState<VendorApplication[]>(initialApplications)
   const [meta, setMeta] = useState(initialMeta)
   const [isLoading, setIsLoading] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter || 'all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedApplication, setSelectedApplication] = useState<VendorApplication | null>(null)
   const [actionDialogOpen, setActionDialogOpen] = useState(false)
@@ -98,6 +103,51 @@ export function VendorApplicationsTable({
   const [rejectionReason, setRejectionReason] = useState('')
   const [internalNotes, setInternalNotes] = useState('')
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+
+  // Helpers to map enums to readable labels
+  const mapAnimalTestingPolicy = (val?: string) => {
+    switch (val) {
+      case 'NO_TESTING':
+        return 'No realizamos pruebas en animales'
+      case 'LIMITED_LEGAL':
+        return 'Pruebas limitadas cuando es requerido por ley'
+      case 'NO_POLICY':
+        return 'Sin política específica'
+      default:
+        return val || 'N/A'
+    }
+  }
+
+  // Category labels mapping
+  const mapCategoryLabel = (slug?: string) => {
+    if (!slug) return 'N/A'
+    const map: Record<string, string> = {
+      'energia-limpia': 'Energía Limpia',
+      'agua-tecnologia': 'Tecnología del Agua',
+      'transporte-sostenible': 'Transporte Sostenible',
+      'construccion-verde': 'Construcción Verde',
+      'agricultura-tech': 'AgriTech',
+      'residuos-reciclaje': 'Gestión de Residuos',
+      'moda-sostenible': 'Moda Sostenible',
+      'alimentos-organicos': 'Alimentos Orgánicos',
+      'cosmetica-natural': 'Cosmética Natural',
+      'tecnologia-limpia': 'Tecnología Limpia'
+    }
+    return map[slug] || slug
+  }
+
+  const mapAnimalOriginUse = (val?: string) => {
+    switch (val) {
+      case 'NO_ANIMAL_PRODUCTS':
+        return 'No utilizamos productos de origen animal'
+      case 'ETHICAL_ANIMAL_PRODUCTS':
+        return 'Abastecimiento ético de productos animales'
+      case 'CONVENTIONAL_ANIMAL_PRODUCTS':
+        return 'Uso convencional'
+      default:
+        return val || 'N/A'
+    }
+  }
 
   const fetchApplications = async (page = 1, status = statusFilter, search = searchQuery) => {
     setIsLoading(true)
@@ -412,7 +462,7 @@ export function VendorApplicationsTable({
 
       {/* Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalles de la Solicitud</DialogTitle>
             <DialogDescription>
@@ -422,6 +472,29 @@ export function VendorApplicationsTable({
 
           {selectedApplication && (
             <div className="space-y-4 py-4">
+              {/* Index Navigation */}
+              <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border rounded-md p-3 mb-2 flex flex-wrap gap-2 text-xs">
+                {[
+                  { id: 'sec-company', label: 'Empresa' },
+                  { id: 'sec-category', label: 'Categoría' },
+                  { id: 'sec-sustainability', label: 'Sostenibilidad' },
+                  { id: 'sec-social', label: 'Impacto Social' },
+                  { id: 'sec-animal', label: 'Bienestar Animal' },
+                  { id: 'sec-docs', label: 'Documentos' },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById(item.id)
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
               {/* Status */}
               <div>
                 <Label className="text-xs text-gray-500">Estado</Label>
@@ -429,7 +502,7 @@ export function VendorApplicationsTable({
               </div>
 
               {/* Company Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div id="sec-company" className="grid grid-cols-2 gap-4 scroll-mt-16">
                 <div>
                   <Label className="text-xs text-gray-500 flex items-center gap-1">
                     <Building2 className="w-3 h-3" />
@@ -504,6 +577,153 @@ export function VendorApplicationsTable({
                 </div>
               )}
 
+              {/* Documents: Categoría */}
+              {selectedApplication.documents?.category && (
+                <div id="sec-category" className="scroll-mt-16">
+                  <Label className="text-xs text-gray-500 flex items-center gap-1">
+                    <Award className="w-3 h-3" />
+                    Categoría Principal
+                  </Label>
+                  <p className="mt-1 text-sm">{mapCategoryLabel(selectedApplication.documents.category)}</p>
+                </div>
+              )}
+
+              {/* Sustainability Section */}
+              {(selectedApplication.documents?.certifications?.length ||
+                selectedApplication.documents?.environmentalCertifications?.length ||
+                selectedApplication.documents?.sustainabilityGoals?.length ||
+                selectedApplication.documents?.sustainabilityIntent) && (
+                <div id="sec-sustainability" className="border rounded-lg p-3 scroll-mt-16">
+                  <Label className="text-xs text-gray-700 flex items-center gap-1">
+                    <Leaf className="w-3 h-3 text-green-600" />
+                    Sostenibilidad
+                  </Label>
+                  <div className="mt-2 space-y-2">
+                    {selectedApplication.documents?.sustainabilityIntent && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Intención</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.sustainabilityIntent}</p>
+                      </div>
+                    )}
+
+                    {Array.isArray(selectedApplication.documents?.certifications) && selectedApplication.documents.certifications.length > 0 && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Certificaciones</Label>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {selectedApplication.documents.certifications.map((c: string) => (
+                            <Badge key={c} className="bg-green-100 text-green-800 text-[11px]">{c}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {Array.isArray(selectedApplication.documents?.environmentalCertifications) && selectedApplication.documents.environmentalCertifications.length > 0 && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Certificaciones Ambientales</Label>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {selectedApplication.documents.environmentalCertifications.map((c: string) => (
+                            <Badge key={c} className="bg-emerald-100 text-emerald-800 text-[11px]">{c}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {Array.isArray(selectedApplication.documents?.sustainabilityGoals) && selectedApplication.documents.sustainabilityGoals.length > 0 && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Objetivos</Label>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {selectedApplication.documents.sustainabilityGoals.map((g: string) => (
+                            <Badge key={g} className="bg-blue-100 text-blue-800 text-[11px]">{g}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Social Impact */}
+              {(selectedApplication.documents?.laborPractices ||
+                selectedApplication.documents?.communityImpact ||
+                selectedApplication.documents?.laborCompliance ||
+                typeof selectedApplication.documents?.fairTradeCertified !== 'undefined' ||
+                typeof selectedApplication.documents?.localSourcingPercent !== 'undefined') && (
+                <div id="sec-social" className="border rounded-lg p-3 scroll-mt-16">
+                  <Label className="text-xs text-gray-700 flex items-center gap-1">
+                    <Users className="w-3 h-3 text-indigo-600" />
+                    Impacto Social
+                  </Label>
+                  <div className="mt-2 space-y-2">
+                    {selectedApplication.documents?.laborPractices && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Relación con Empleados</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborPractices}</p>
+                      </div>
+                    )}
+                    {selectedApplication.documents?.communityImpact && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Impacto en Comunidades</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.communityImpact}</p>
+                      </div>
+                    )}
+                    {selectedApplication.documents?.laborCompliance && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Cumplimiento Laboral</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborCompliance}</p>
+                      </div>
+                    )}
+                    {typeof selectedApplication.documents?.fairTradeCertified !== 'undefined' && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Comercio Justo</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.fairTradeCertified ? 'Sí' : 'No'}</p>
+                      </div>
+                    )}
+                    {typeof selectedApplication.documents?.localSourcingPercent !== 'undefined' && selectedApplication.documents.localSourcingPercent !== null && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Abastecimiento Local</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.localSourcingPercent}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Animal Welfare */}
+              {(selectedApplication.documents?.animalTestingPolicy ||
+                selectedApplication.documents?.animalOriginUse ||
+                selectedApplication.documents?.animalWelfarePolicies ||
+                selectedApplication.documents?.ethicalAlternatives) && (
+                <div id="sec-animal" className="border rounded-lg p-3 scroll-mt-16">
+                  <Label className="text-xs text-gray-700">Bienestar Animal</Label>
+                  <div className="mt-2 space-y-2">
+                    {selectedApplication.documents?.animalTestingPolicy && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Política de Pruebas</Label>
+                        <p className="text-sm mt-0.5">{mapAnimalTestingPolicy(selectedApplication.documents.animalTestingPolicy)}</p>
+                      </div>
+                    )}
+                    {selectedApplication.documents?.animalOriginUse && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Uso de Productos de Origen Animal</Label>
+                        <p className="text-sm mt-0.5">{mapAnimalOriginUse(selectedApplication.documents.animalOriginUse)}</p>
+                      </div>
+                    )}
+                    {selectedApplication.documents?.animalWelfarePolicies && (
+                      <div>
+                        <Label className="text-[11px] text-gray-500">Políticas de Bienestar</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.animalWelfarePolicies}</p>
+                      </div>
+                    )}
+                    {selectedApplication.documents?.ethicalAlternatives && (
+                      <div>
+                        <Label className="text=[11px] text-gray-500">Alternativas Éticas</Label>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.ethicalAlternatives}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Tax ID */}
               {selectedApplication.taxId && (
                 <div>
@@ -549,6 +769,61 @@ export function VendorApplicationsTable({
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <Label className="text-xs text-gray-700">Notas Internas</Label>
                   <p className="mt-1 text-sm text-gray-800">{selectedApplication.internalNotes}</p>
+                </div>
+              )}
+
+              {/* Contact Info from documents */}
+              {(selectedApplication.documents?.contactName || selectedApplication.documents?.contactEmail) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedApplication.documents?.contactName && (
+                    <div>
+                      <Label className="text-xs text-gray-500">Representante</Label>
+                      <p className="mt-1 text-sm">{selectedApplication.documents.contactName}</p>
+                    </div>
+                  )}
+                  {selectedApplication.documents?.contactEmail && (
+                    <div>
+                      <Label className="text-xs text-gray-500">Email de Contacto</Label>
+                      <p className="mt-1 text-sm">{selectedApplication.documents.contactEmail}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Attached Documents */}
+              {Array.isArray(selectedApplication.documents?.certificationDocuments) && selectedApplication.documents.certificationDocuments.length > 0 && (
+                <div id="sec-docs" className="border rounded-lg p-3 scroll-mt-16">
+                  <Label className="text-xs text-gray-700 flex items-center gap-1">
+                    <FileText className="w-3 h-3" />
+                    Documentación Adjunta
+                  </Label>
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedApplication.documents.certificationDocuments.map((doc: any, idx: number) => {
+                      const isImage = typeof doc?.type === 'string' && doc.type.startsWith('image')
+                      return (
+                        <a
+                          key={`${doc.filename}-${idx}`}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-2 border rounded hover:bg-gray-50"
+                        >
+                          {isImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={doc.url} alt={doc.filename} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <FileText className="w-6 h-6 text-gray-500" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.filename}</p>
+                            {typeof doc.size === 'number' && (
+                              <p className="text-xs text-gray-500">{Math.round(doc.size / 1024)} KB</p>
+                            )}
+                          </div>
+                        </a>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>

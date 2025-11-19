@@ -33,30 +33,6 @@ export default function VendorDashboard() {
 
       <div className="p-6 space-y-8">
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/dashboard/vendor/inventory?action=create">
-            <Button className="w-full h-auto py-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700" size="lg">
-              <Plus className="w-5 h-5" />
-              <span>Crear Producto</span>
-            </Button>
-          </Link>
-
-          <Link href="/dashboard/vendor/orders">
-            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2 border-green-600 text-green-700 hover:bg-green-50" size="lg">
-              <ShoppingCart className="w-5 h-5" />
-              <span>Ver Órdenes</span>
-            </Button>
-          </Link>
-
-          <Link href="/dashboard/vendor/analytics">
-            <Button variant="outline" className="w-full h-auto py-4 flex items-center justify-center gap-2 border-green-600 text-green-700 hover:bg-green-50" size="lg">
-              <BarChart3 className="w-5 h-5" />
-              <span>Analytics</span>
-            </Button>
-          </Link>
-        </div>
-
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-l-4 border-l-green-600">
@@ -159,10 +135,16 @@ export default function VendorDashboard() {
               <CardTitle>Gestión Rápida</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href="/dashboard/vendor/products">
+              <Link href="/dashboard/vendor/analytics">
+                <Button variant="outline" className="w-full justify-start" size="sm">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Analíticas
+                </Button>
+              </Link>
+              <Link href="/dashboard/vendor/inventory">
                 <Button variant="outline" className="w-full justify-start" size="sm">
                   <Package className="w-4 h-4 mr-2" />
-                  Mis Productos
+                  Inventario
                 </Button>
               </Link>
 

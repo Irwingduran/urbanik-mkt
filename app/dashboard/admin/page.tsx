@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DashboardLayout, DashboardHeader } from '@/components/shared/layout/DashboardLayout'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,35 +12,42 @@ import {
   DollarSign,
   AlertCircle,
   CheckCircle,
-  ArrowUpRight,
-  ArrowDownRight,
   Activity
 } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/lib/hooks/use-toast'
-
-interface VendorApplication {
-  id: string
-  companyName: string
-  businessType: string
-  status: string
-  submittedAt: string
-  user: {
-    id: string
-    name: string
-    email: string
-  }
-}
+import { useAdminDashboard } from '@/hooks/useAdminDashboard'
+import { RecentActivityTable } from '@/components/admin/RecentActivityTable'
+import { QuickActions } from '@/components/admin/QuickActions'
+import { SystemStatus } from '@/components/admin/SystemStatus'
+import { ActivityFeed } from '@/components/admin/ActivityFeed'
+import { TopSellers } from '@/components/admin/TopSellers'
+import { TrendingProducts } from '@/components/admin/TrendingProducts'
 
 export default function AdminDashboardPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const { toast } = useToast()
   const [vendorApplications, setVendorApplications] = useState<VendorApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
+  const { stats, data, isLoading: statsLoading, isError: statsError, error: statsErrorObj, refetch } = useAdminDashboard()
 
   useEffect(() => {
-    fetchVendorApplications()
-  }, [])
+    if (status === 'unauthenticated') {
+      router.push('/signin')
+      return
+    }
+
+    if (status === 'authenticated' && session?.user.role !== 'ADMIN') {
+      router.push('/dashboard')
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetchVendorApplications()
+    }
+  }, [status, session, router])
 
   const fetchVendorApplications = async () => {
     try {
@@ -90,22 +98,26 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // Mock data para stats (esto debería venir de API en producción)
-  const mockAdminData = {
-    stats: {
-      totalUsers: 1247,
-      usersGrowth: 12.5,
-      totalVendors: 89,
-      vendorsGrowth: 8.3,
-      platformRevenue: 45280.50,
-      revenueGrowth: 18.4
-    },
-    systemHealth: {
-      apiStatus: 'operational',
-      databaseStatus: 'operational',
-      storageStatus: 'operational',
-      uptime: 99.98
-    }
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin">
+          <div className="h-12 w-12 border-4 border-gray-300 border-t-green-600 rounded-full"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return null
+  }
+
+  // Salud del sistema (placeholder hasta usar hook real)
+  const systemHealth = {
+    apiStatus: 'operational',
+    databaseStatus: 'operational',
+    storageStatus: 'operational',
+    uptime: 99.98
   }
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,91 +149,65 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <DashboardLayout>
-      <DashboardHeader
-        title="Panel de Administración"
-        subtitle="Vista general y métricas de la plataforma"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Admin' }
-        ]}
-      />
-
+    <>
       <div className="p-6 space-y-6">
-        {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <QuickActions />
+
+        {/* Estadísticas principales (datos reales) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Total Usuarios */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Users className="w-6 h-6 text-blue-600" />
                 </div>
-                {mockAdminData.stats.usersGrowth > 0 ? (
-                  <div className="flex items-center text-green-600 text-sm font-medium">
-                    <ArrowUpRight className="w-4 h-4 mr-1" />
-                    {mockAdminData.stats.usersGrowth}%
-                  </div>
-                ) : (
-                  <div className="flex items-center text-red-600 text-sm font-medium">
-                    <ArrowDownRight className="w-4 h-4 mr-1" />
-                    {Math.abs(mockAdminData.stats.usersGrowth)}%
-                  </div>
-                )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {mockAdminData.stats.totalUsers.toLocaleString()}
-              </h3>
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-blue-200 rounded animate-pulse" />
+              ) : statsError ? (
+                <p className="text-sm text-red-600">Error</p>
+              ) : (
+                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalUsers.toLocaleString()}</h3>
+              )}
               <p className="text-sm text-gray-600">Total de Usuarios</p>
             </CardContent>
           </Card>
-
+          {/* Vendedores Activos */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <Store className="w-6 h-6 text-green-600" />
                 </div>
-                {mockAdminData.stats.vendorsGrowth > 0 ? (
-                  <div className="flex items-center text-green-600 text-sm font-medium">
-                    <ArrowUpRight className="w-4 h-4 mr-1" />
-                    {mockAdminData.stats.vendorsGrowth}%
-                  </div>
-                ) : (
-                  <div className="flex items-center text-red-600 text-sm font-medium">
-                    <ArrowDownRight className="w-4 h-4 mr-1" />
-                    {Math.abs(mockAdminData.stats.vendorsGrowth)}%
-                  </div>
-                )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {mockAdminData.stats.totalVendors}
-              </h3>
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-green-200 rounded animate-pulse" />
+              ) : statsError ? (
+                <p className="text-sm text-red-600">Error</p>
+              ) : (
+                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalVendors}</h3>
+              )}
               <p className="text-sm text-gray-600">Vendedores Activos</p>
             </CardContent>
           </Card>
-
+          {/* Ingresos Mes */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-purple-600" />
                 </div>
-                {mockAdminData.stats.revenueGrowth > 0 ? (
-                  <div className="flex items-center text-green-600 text-sm font-medium">
-                    <ArrowUpRight className="w-4 h-4 mr-1" />
-                    {mockAdminData.stats.revenueGrowth}%
-                  </div>
-                ) : (
-                  <div className="flex items-center text-red-600 text-sm font-medium">
-                    <ArrowDownRight className="w-4 h-4 mr-1" />
-                    {Math.abs(mockAdminData.stats.revenueGrowth)}%
-                  </div>
-                )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                ${mockAdminData.stats.platformRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </h3>
-              <p className="text-sm text-gray-600">Ingresos Plataforma</p>
+              {statsLoading ? (
+                <div className="h-8 w-32 bg-purple-200 rounded animate-pulse" />
+              ) : statsError ? (
+                <p className="text-sm text-red-600">Error</p>
+              ) : (
+                <h3 className="text-2xl font-bold text-gray-900">${stats?.monthlyRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+              )}
+              <p className="text-sm text-gray-600">Ingresos Mes (Pagados)</p>
             </CardContent>
           </Card>
         </div>
@@ -324,6 +310,41 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Distribución NFT Levels */}
+        {stats && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium flex justify-between items-center">
+                Distribución Niveles NFT
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {Object.entries(stats.nftDistribution || {}).map(([level,count]) => (
+                  <div key={level} className="p-3 rounded border bg-white flex flex-col items-center text-center">
+                    <p className="text-xs font-semibold tracking-wide">{level}</p>
+                    <p className="text-lg font-bold">{count}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Actividad reciente */}
+  <RecentActivityTable orders={data?.recentActivity as any} loading={statsLoading} />
+
+        {/* Dashboard mejorado: System Status, Activity Feed, Top Sellers, Trending Products */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SystemStatus />
+          <ActivityFeed />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopSellers />
+          <TrendingProducts />
+        </div>
+
         {/* Estado del sistema */}
         <Card>
           <CardHeader>
@@ -336,42 +357,42 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${
-                  mockAdminData.systemHealth.apiStatus === 'operational'
+                  systemHealth.apiStatus === 'operational'
                     ? 'bg-green-500'
                     : 'bg-red-500'
                 }`}></div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">API</p>
                   <p className="text-xs text-gray-500 capitalize">
-                    {mockAdminData.systemHealth.apiStatus}
+                    {systemHealth.apiStatus}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${
-                  mockAdminData.systemHealth.databaseStatus === 'operational'
+                  systemHealth.databaseStatus === 'operational'
                     ? 'bg-green-500'
                     : 'bg-red-500'
                 }`}></div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Base de Datos</p>
                   <p className="text-xs text-gray-500 capitalize">
-                    {mockAdminData.systemHealth.databaseStatus}
+                    {systemHealth.databaseStatus}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${
-                  mockAdminData.systemHealth.storageStatus === 'operational'
+                  systemHealth.storageStatus === 'operational'
                     ? 'bg-green-500'
                     : 'bg-red-500'
                 }`}></div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Almacenamiento</p>
                   <p className="text-xs text-gray-500 capitalize">
-                    {mockAdminData.systemHealth.storageStatus}
+                    {systemHealth.storageStatus}
                   </p>
                 </div>
               </div>
@@ -381,7 +402,7 @@ export default function AdminDashboardPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">Uptime</p>
                   <p className="text-xs text-gray-500">
-                    {mockAdminData.systemHealth.uptime}%
+                    {systemHealth.uptime}%
                   </p>
                 </div>
               </div>
@@ -417,6 +438,19 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   )
+}
+
+interface VendorApplication {
+  id: string
+  companyName: string
+  businessType: string
+  status: string
+  submittedAt: string
+  user: {
+    id: string
+    name: string
+    email: string
+  }
 }

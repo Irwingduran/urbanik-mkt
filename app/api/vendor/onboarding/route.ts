@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { VendorOnboardingSchema } from '@/lib/schemas/vendor-onboarding'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,20 +15,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
+    const json = await request.json()
+    const parsed = VendorOnboardingSchema.safeParse(json)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
     const {
       companyName,
+      businessType,
       description,
       website,
       phone,
       email,
-      address,
+      businessAddress,
       category,
       certifications,
-      sustainabilityFocus,
-      sustainabilityMetrics,
-      contactName
-    } = body
+      sustainabilityGoals,
+      sustainabilityIntent,
+      contactName,
+  environmentalCertifications,
+  certificationDocuments,
+      laborPractices,
+      communityImpact,
+      laborCompliance,
+      fairTradeCertified,
+      localSourcingPercent,
+      animalTestingPolicy,
+      animalOriginUse,
+      animalWelfarePolicies,
+      ethicalAlternatives,
+    } = parsed.data
 
     // Get user from database
     const user = await prisma.user.findUnique({
@@ -88,19 +110,39 @@ export async function POST(request: NextRequest) {
     const application = await prisma.vendorApplication.create({
       data: {
         userId: user.id,
-        companyName: companyName || 'New Sustainable Business',
-        businessType: category || 'Otro',
+        companyName,
+        businessType, // LLC, Individual, Corporation, etc.
         description: description || null,
         website: website || null,
-        businessPhone: phone || null,
-        businessAddress: address || null,
+        businessPhone: phone,
+        businessAddress: businessAddress || null,
         taxId: null, // Can be added later
+        // Store additional data in documents JSON field
         documents: {
-          certifications: certifications || [],
-          sustainabilityMetrics: sustainabilityMetrics || {},
-          sustainabilityFocus: sustainabilityFocus || [],
+          // Core
+          category,
           contactName: contactName || user.name,
-          contactEmail: email || user.email
+          contactEmail: email,
+          // Sustainability (legacy + new)
+          certifications: certifications || [],
+          sustainabilityGoals: sustainabilityGoals || [],
+          sustainabilityIntent: sustainabilityIntent || '',
+          environmentalCertifications: environmentalCertifications || [],
+          certificationDocuments: certificationDocuments || [],
+          // Social
+          laborPractices: laborPractices || '',
+          communityImpact: communityImpact || '',
+          laborCompliance: laborCompliance || '',
+          fairTradeCertified: !!fairTradeCertified,
+          localSourcingPercent: typeof localSourcingPercent === 'number' ? localSourcingPercent : null,
+          // Animal welfare
+          animalTestingPolicy: animalTestingPolicy || null,
+          animalOriginUse: animalOriginUse || null,
+          animalWelfarePolicies: animalWelfarePolicies || '',
+          ethicalAlternatives: ethicalAlternatives || '',
+          // Meta
+          website: website || null,
+          businessAddress: businessAddress || null,
         },
         status: 'PENDING',
         submittedAt: new Date()

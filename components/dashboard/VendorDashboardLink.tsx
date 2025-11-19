@@ -3,8 +3,9 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Store, ArrowRight, TrendingUp, Package, Star, CheckCircle } from 'lucide-react'
+import { Store, ArrowRight, TrendingUp, Package, Star, CheckCircle, X } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
 
 interface VendorDashboardLinkProps {
   vendorProfile: {
@@ -17,6 +18,12 @@ interface VendorDashboardLinkProps {
 }
 
 export function VendorDashboardLink({ vendorProfile }: VendorDashboardLinkProps) {
+  const [isVisible, setIsVisible] = useState(true)
+
+  if (!isVisible) {
+    return null
+  }
+
   // TODO: Fetch real stats from API
   const mockStats = {
     products: 0,
@@ -32,6 +39,15 @@ export function VendorDashboardLink({ vendorProfile }: VendorDashboardLinkProps)
 
       <CardContent className="p-6 relative z-10">
         <div className="flex items-start gap-4">
+          {/* Close Button */}
+          <button
+            onClick={() => setIsVisible(false)}
+            className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Cerrar notificación"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           {/* Icon */}
           <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
             <Store className="w-7 h-7 text-white" />

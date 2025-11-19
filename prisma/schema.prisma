@@ -15,6 +15,10 @@ model User {
   role          Role      @default(USER) // DEPRECATED: Use userRoles instead
   image         String?
   emailVerified DateTime?
+  isBanned      Boolean   @default(false) // Ban status
+  banReason     String?   // Why user was banned
+  bannedAt      DateTime? // When user was banned
+  banExpiresAt  DateTime? // When ban expires (null = permanent)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -30,6 +34,8 @@ model User {
   notifications  Notification[]
   accounts       Account[]
   sessions       Session[]
+  flagsReported  ContentFlag[] @relation("FlagReporter")
+  flagsReviewed  ContentFlag[] @relation("FlagReviewer")
 
   // New multi-role system
   userRoles         UserRole[]
@@ -70,8 +76,8 @@ model UserProfile {
 // This model is kept for backward compatibility during migration
 // Will be removed in future version
 model Vendor {
-  id             String    @id @default(cuid())
-  userId         String    @unique
+  id             String   @id @default(cuid())
+  userId         String   @unique
   companyName    String
   description    String?
   website        String?
@@ -81,17 +87,17 @@ model Vendor {
   founded        String?
   employees      String?
   location       String?
-  regenScore     Int       @default(0)
-  nftLevel       String    @default("Semilla Verde")
-  totalProducts  Int       @default(0)
-  totalSales     Int       @default(0)
-  monthlyRevenue Float     @default(0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  regenScore     Int      @default(0)
+  nftLevel       String   @default("Semilla Verde")
+  totalProducts  Int      @default(0)
+  totalSales     Int      @default(0)
+  monthlyRevenue Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   // Relations commented out - use VendorProfile instead
   // orders         Order[]
   // products       Product[]
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("vendors")
 }
@@ -188,6 +194,7 @@ model Review {
   comment   String?
   verified  Boolean  @default(false)
   helpful   Int      @default(0)
+  isFlagged Boolean  @default(false) // Whether review has been flagged
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   product   Product  @relation(fields: [productId], references: [id])
@@ -405,22 +412,36 @@ model VendorProfile {
   suspendedReason String?   @db.Text
   suspendedAt     DateTime?
   suspendedBy     String? // admin userId
+  isBanned        Boolean   @default(false) // Permanent ban
+  banReason       String?   @db.Text
+  bannedAt        DateTime?
+  bannedBy        String? // admin userId
 
-  // Sustainability
-  regenScore          Int      @default(0)
-  certifications      String[] @default([])
-  sustainabilityGoals String[] @default([])
+  // Sustainability (RegenMark System)
+  regenScore            Int       @default(0) // 0-100 calculated score
+  nftLevel              NFTLevel  @default(VERDE_CLARO)
+  certifications        String[]  @default([])
+  sustainabilityGoals   String[]  @default([])
+  sustainabilityMetrics Json? // Full metrics JSON storage
+  metricsLastUpdated    DateTime?
+  metricsVerified       Boolean   @default(false)
+  metricsVerifiedBy     String? // admin userId
+  metricsVerifiedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products Product[]
-  orders   Order[]
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products    Product[]
+  orders      Order[]
+  regenMarks  RegenMark[]
+  evaluations RegenMarkEvaluation[]
 
   @@index([verificationStatus])
   @@index([active])
+  @@index([nftLevel])
+  @@index([regenScore])
   @@map("vendor_profiles")
 }
 
@@ -458,6 +479,149 @@ model VendorApplication {
   @@index([status])
   @@index([createdAt])
   @@map("vendor_applications")
+}
+
+// ============================================
+// REGENMARK SYSTEM
+// ============================================
+
+model RegenMark {
+  id              String        @id @default(cuid())
+  vendorProfileId String
+  type            RegenMarkType
+
+  // Scoring
+  score    Int @default(0) // 0-100 for this specific RegenMark
+  maxScore Int @default(100)
+
+  // Status and lifecycle
+  status RegenMarkStatus @default(PENDING)
+  level  String? // "Bronze", "Silver", "Gold", "Platinum" (optional tier within RegenMark)
+
+  // Validity period
+  issuedAt      DateTime?
+  expiresAt     DateTime?
+  lastRenewedAt DateTime?
+
+  // Verification
+  verifiedBy String? // evaluator userId
+  verifiedAt DateTime?
+
+  // Metrics (JSON storage for flexibility)
+  metrics  Json? // Specific metrics for this RegenMark type
+  evidence Json? // Links to documents, certificates, etc.
+
+  // Evaluation history
+  evaluationNotes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  vendorProfile VendorProfile         @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  evaluations   RegenMarkEvaluation[]
+  documents     Document[]
+
+  @@index([vendorProfileId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("regen_marks")
+}
+
+model RegenMarkEvaluation {
+  id              String        @id @default(cuid())
+  regenMarkId     String?
+  vendorProfileId String
+  type            RegenMarkType
+
+  // Evaluation details
+  status EvaluationStatus @default(PENDING)
+  stage  EvaluationStage  @default(SUBMITTED)
+
+  // AI Processing
+  aiProcessed   Boolean   @default(false)
+  aiScore       Int?      @default(0)
+  aiFlags       Json? // Anomalies detected by AI
+  aiProcessedAt DateTime?
+
+  // Manual review
+  reviewerId    String? // admin/evaluator userId
+  reviewerNotes String?   @db.Text
+  reviewScore   Int?
+  reviewedAt    DateTime?
+
+  // Final results
+  finalScore Int?
+  approved   Boolean @default(false)
+  feedback   String? @db.Text
+
+  // Payment
+  paymentAmount   Decimal?      @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripePaymentId String?
+
+  // Timeline
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  vendorProfile VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  regenMark     RegenMark?    @relation(fields: [regenMarkId], references: [id], onDelete: SetNull)
+  documents     Document[]
+
+  @@index([vendorProfileId])
+  @@index([status])
+  @@index([stage])
+  @@index([type])
+  @@map("regen_mark_evaluations")
+}
+
+model Document {
+  id                    String  @id @default(cuid())
+  regenMarkEvaluationId String?
+  regenMarkId           String?
+
+  // Document info
+  type        DocumentType
+  name        String
+  description String?
+
+  // File storage
+  url      String // S3, Cloudinary, etc.
+  fileName String
+  fileSize Int // bytes
+  mimeType String
+
+  // AI processing
+  aiExtractedData Json? // OCR/NLP extracted data
+  aiVerified      Boolean @default(false)
+  aiFlags         Json? // Fraud detection flags
+
+  // Manual verification
+  manuallyVerified  Boolean   @default(false)
+  verifiedBy        String? // admin userId
+  verifiedAt        DateTime?
+  verificationNotes String?
+
+  // Metadata
+  uploadedBy String // userId
+  uploadedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  evaluation RegenMarkEvaluation? @relation(fields: [regenMarkEvaluationId], references: [id], onDelete: Cascade)
+  regenMark  RegenMark?           @relation(fields: [regenMarkId], references: [id], onDelete: Cascade)
+
+  @@index([regenMarkEvaluationId])
+  @@index([regenMarkId])
+  @@index([type])
+  @@map("documents")
 }
 
 // ============================================
@@ -527,6 +691,99 @@ enum NotificationType {
   VENDOR_APPROVED
   VENDOR_REJECTED
   VENDOR_IN_REVIEW
+  REGENMARK_SUBMITTED
+  REGENMARK_APPROVED
+  REGENMARK_REJECTED
+  REGENMARK_EXPIRING
+  REGENMARK_EXPIRED
+  NFT_LEVEL_UP
+  NFT_LEVEL_DOWN
+}
+
+// RegenMark System Enums
+enum NFTLevel {
+  VERDE_CLARO // 0-19 points
+  HOJA_ACTIVA // 20-39 points
+  ECO_GUARDIA // 40-59 points
+  ESTRELLA_VERDE // 60-79 points
+  HUELLA_CERO // 80-100 points
+}
+
+enum RegenMarkType {
+  CARBON_SAVER // Carbon emissions, energy, climate
+  WATER_GUARDIAN // Water conservation, management
+  CIRCULAR_CHAMPION // Waste, recycling, circular economy
+  HUMAN_FIRST // Social impact, labor, community
+  HUMANE_HERO // Cruelty-free, animal welfare
+}
+
+enum RegenMarkStatus {
+  PENDING // Initial state, not yet evaluated
+  IN_EVALUATION // Currently being evaluated
+  ACTIVE // Approved and active
+  EXPIRING_SOON // 60 days before expiration
+  EXPIRED // Past expiration date
+  SUSPENDED // Temporarily suspended
+  REVOKED // Permanently revoked
+  REJECTED // Evaluation rejected
+}
+
+enum EvaluationStatus {
+  PENDING // Payment pending
+  PAID // Payment confirmed
+  SUBMITTED // Documents submitted
+  AI_PROCESSING // AI is processing documents
+  IN_REVIEW // Manual review in progress
+  APPROVED // Evaluation approved
+  REJECTED // Evaluation rejected
+  CANCELLED // Cancelled by vendor
+}
+
+enum EvaluationStage {
+  PAYMENT // Waiting for payment
+  SUBMITTED // Documents submitted
+  AI_ANALYSIS // AI processing
+  MANUAL_REVIEW // Human reviewer checking
+  FINAL_REVIEW // Final verification
+  COMPLETED // Evaluation complete
+}
+
+enum DocumentType {
+  // Carbon Saver
+  CARBON_FOOTPRINT_REPORT
+  ENERGY_BILLS
+  CARBON_OFFSET_CERTIFICATE
+  ISO_14001_CERTIFICATE
+
+  // Water Guardian
+  WATER_BILLS
+  WATER_RECYCLING_EVIDENCE
+  WATER_AUDIT_REPORT
+  WATER_TREATMENT_PHOTOS
+
+  // Circular Champion
+  WASTE_MANAGEMENT_RECORDS
+  RECYCLING_CONTRACTS
+  CIRCULAR_ECONOMY_EVIDENCE
+  ZERO_WASTE_CERTIFICATE
+
+  // Human First
+  LABOR_POLICY_DOCUMENT
+  COMMUNITY_PROGRAMS_EVIDENCE
+  SUSTAINABILITY_REPORT
+  B_CORP_CERTIFICATE
+  FAIR_TRADE_CERTIFICATE
+
+  // Humane Hero
+  CRUELTY_FREE_CERTIFICATE
+  ANIMAL_WELFARE_AUDIT
+  NO_TESTING_POLICY
+  ETHICAL_SUPPLY_CHAIN_CERT
+
+  // General
+  BUSINESS_LICENSE
+  TAX_DOCUMENT
+  OTHER
 }
 
 // NextAuth required tables
@@ -567,4 +824,64 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+// ============================================
+// CONTENT MODERATION
+// ============================================
+model ContentFlag {
+  id           String        @id @default(cuid())
+  type         FlagType      // REVIEW, PRODUCT, VENDOR, USER, MESSAGE
+  targetId     String        // ID of the flagged content
+  reason       String        // Why it's being flagged
+  description  String?       // Detailed description
+  status       FlagStatus    @default(PENDING) // PENDING, REVIEWED, RESOLVED, DISMISSED
+  severity     String        @default("medium") // low, medium, high, critical
+  reportedBy   String        // User who reported it
+  reviewedBy   String?       // Admin who reviewed it
+  resolution   String?       // What action was taken
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  reporter     User          @relation("FlagReporter", fields: [reportedBy], references: [id], onDelete: Cascade)
+  reviewer     User?         @relation("FlagReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("content_flags")
+}
+
+// ============================================
+// PLATFORM SETTINGS (Key-Value Store)
+// ============================================
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  group     String   // e.g. 'general', 'regenScore', 'commissions', 'payments', 'shipping', 'policies'
+  key       String   // e.g. 'maintenanceMode'
+  value     Json     // Typed in application layer
+  updatedBy String?  // admin userId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([group, key])
+  @@index([group])
+  @@map("platform_settings")
+}
+
+// ============================================
+// ENUMS FOR MODERATION
+// ============================================
+enum FlagType {
+  REVIEW
+  PRODUCT
+  VENDOR
+  USER
+  MESSAGE
+}
+
+enum FlagStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
 }

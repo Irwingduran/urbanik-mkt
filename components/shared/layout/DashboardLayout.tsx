@@ -22,7 +22,8 @@ import {
   AlertCircle,
   Info,
   Menu,
-  Clock
+  Clock,
+  Flag
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -151,6 +152,13 @@ const navigationItems: NavItem[] = [
     ariaLabel: 'Ver pedidos'
   },
   {
+    label: 'RegenMarks',
+    href: '/dashboard/vendor/regenmarks',
+    icon: Leaf,
+    roles: [UserRole.VENDOR],
+    ariaLabel: 'Mis certificaciones de sostenibilidad'
+  },
+  {
     label: 'Analíticas',
     href: '/dashboard/vendor/analytics',
     icon: BarChart3,
@@ -186,6 +194,20 @@ const navigationItems: NavItem[] = [
     icon: Store,
     roles: [UserRole.ADMIN],
     ariaLabel: 'Gestionar vendedores'
+  },
+  {
+    label: 'RegenMarks',
+    href: '/dashboard/admin/regenmarks',
+    icon: Leaf,
+    roles: [UserRole.ADMIN],
+    ariaLabel: 'Evaluar solicitudes de RegenMark'
+  },
+  {
+    label: 'Moderación',
+    href: '/dashboard/admin/moderation',
+    icon: Flag,
+    roles: [UserRole.ADMIN],
+    ariaLabel: 'Gestionar reportes de contenido'
   },
 ]
 
