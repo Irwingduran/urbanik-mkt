@@ -46,7 +46,5 @@ export async function GET() {
       { success: false, error: 'Failed to fetch categories' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

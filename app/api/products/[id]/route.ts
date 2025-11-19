@@ -116,7 +116,5 @@ export async function GET(
       { success: false, error: 'Failed to fetch product' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

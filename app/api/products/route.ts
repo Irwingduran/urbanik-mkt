@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const search = searchParams.get('search')
     const featured = searchParams.get('featured')
+    const sale = searchParams.get('sale')
     const limit = searchParams.get('limit')
 
     let whereClause: any = {
@@ -39,6 +40,13 @@ export async function GET(request: NextRequest) {
 
     if (featured === 'true') {
       whereClause.featured = true
+    }
+
+    // Handle sale/discount products
+    if (sale === 'true') {
+      whereClause.originalPrice = {
+        not: null
+      }
     }
 
     const products = await prisma.product.findMany({
@@ -131,7 +139,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Failed to fetch products' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
