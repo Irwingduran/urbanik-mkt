@@ -167,9 +167,9 @@ export default function AdminDashboardPage() {
               {statsLoading ? (
                 <div className="h-8 w-20 bg-blue-200 rounded animate-pulse" />
               ) : statsError ? (
-                <p className="text-sm text-red-600">Error</p>
+                <p className="text-sm text-red-600">Error: {statsErrorObj?.message || 'Unknown'}</p>
               ) : (
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalUsers.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalUsers?.toLocaleString() || '0'}</h3>
               )}
               <p className="text-sm text-gray-600">Total de Usuarios</p>
             </CardContent>
@@ -185,9 +185,9 @@ export default function AdminDashboardPage() {
               {statsLoading ? (
                 <div className="h-8 w-20 bg-green-200 rounded animate-pulse" />
               ) : statsError ? (
-                <p className="text-sm text-red-600">Error</p>
+                <p className="text-sm text-red-600">Error: {statsErrorObj?.message || 'Unknown'}</p>
               ) : (
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalVendors}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalVendors || '0'}</h3>
               )}
               <p className="text-sm text-gray-600">Vendedores Activos</p>
             </CardContent>
@@ -203,9 +203,9 @@ export default function AdminDashboardPage() {
               {statsLoading ? (
                 <div className="h-8 w-32 bg-purple-200 rounded animate-pulse" />
               ) : statsError ? (
-                <p className="text-sm text-red-600">Error</p>
+                <p className="text-sm text-red-600">Error: {statsErrorObj?.message || 'Unknown'}</p>
               ) : (
-                <h3 className="text-2xl font-bold text-gray-900">${stats?.monthlyRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">${stats?.monthlyRevenue?.toLocaleString('es-MX', { minimumFractionDigits: 2 }) || '0'}</h3>
               )}
               <p className="text-sm text-gray-600">Ingresos Mes (Pagados)</p>
             </CardContent>

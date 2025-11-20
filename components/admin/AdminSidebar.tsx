@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   Users,
+  User,
   Store,
   Package,
   TrendingUp,
@@ -63,6 +64,12 @@ const adminNavItems = [
     label: 'Configuración',
     href: '/dashboard/admin/settings',
     icon: Settings,
+    category: 'system'
+  },
+  {
+    label: 'Perfil',
+    href: '/dashboard/admin/profile',
+    icon: User,
     category: 'system'
   }
 ]

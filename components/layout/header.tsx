@@ -148,6 +148,11 @@ export default function Header() {
       }
     }
 
+    // ADMIN users do NOT see the "Vender" button
+    if (authState.role === 'ADMIN') {
+      return null
+    }
+
     // For guest users - show vender button
     return {
       name: "Vender",
@@ -161,7 +166,6 @@ export default function Header() {
 
   // Navigation items con validación de roles
   const navigation: NavItem[] = [
-    { ...vendorButton, roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Promociones", href: "/promotions", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
     { name: "Lo más vendido", href: "/best-sellers", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },
   ]
@@ -304,19 +308,21 @@ export default function Header() {
                     </p>
                   </div>
 
-                  {/* Dashboard Comprador - Siempre visible */}
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="flex items-start gap-3 cursor-pointer py-3">
-                      <ShoppingCart className="w-4 h-4 mt-0.5 text-green-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Dashboard Comprador</p>
-                        <p className="text-xs text-muted-foreground">Mis compras y órdenes</p>
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
+                  {/* Dashboard Comprador - Solo para USUARIOS (no admin) */}
+                  {authState.role !== 'ADMIN' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="flex items-start gap-3 cursor-pointer py-3">
+                        <ShoppingCart className="w-4 h-4 mt-0.5 text-green-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Dashboard Comprador</p>
+                          <p className="text-xs text-muted-foreground">Mis compras y órdenes</p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
 
-                  {/* Dashboard Vendedor - Solo si es VENDOR */}
-                  {(authState.role === 'VENDOR' || authState.role === 'ADMIN') && (
+                  {/* Dashboard Vendedor - Solo si es VENDOR (no admin) */}
+                  {authState.role === 'VENDOR' && (
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/vendor" className="flex items-start gap-3 cursor-pointer py-3">
                         <Store className="w-4 h-4 mt-0.5 text-blue-600" />
@@ -502,7 +508,7 @@ export default function Header() {
                     </div>
                   )}
 
-                  {(authState.role === 'VENDOR' || authState.role === 'ADMIN') && (
+                  {authState.role === 'VENDOR' && (
                     <div className="mb-4">
                       <h3 className="text-sm font-medium text-gray-500 mb-2 px-3">
                         Panel Vendedor

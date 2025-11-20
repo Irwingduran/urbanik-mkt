@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useEffect, useState } from 'react'
 import { DashboardLayout, DashboardHeader } from '@/components/shared/layout/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,15 @@ export default function UserDashboardPage() {
   const { data: session } = useSession()
   const { status, isLoading, application, vendorProfile } = useVendorStatus()
   const { data: dashboardData, loading: dashboardLoading, error: dashboardError } = useUserDashboard()
+  const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Verificar si el banner fue cerrado anteriormente
+  useEffect(() => {
+    const isDismissed = localStorage.getItem('vendorBanner_dismissed') === 'true'
+    setBannerDismissed(isDismissed)
+    setMounted(true)
+  }, [])
 
   if (!session) {
     return (
@@ -44,7 +54,7 @@ export default function UserDashboardPage() {
 
   // Renderiza el componente correcto según el estado del vendedor
   const renderVendorSection = () => {
-    if (isLoading) {
+    if (isLoading || !mounted) {
       return null // Evitar parpadeo mientras carga
     }
 
@@ -58,7 +68,13 @@ export default function UserDashboardPage() {
         return application ? <VendorApplicationRejected application={application} /> : null
       case 'not_applied':
       default:
-        return <BecomeVendorBanner />
+        // Solo mostrar banner si no fue cerrado
+        return !bannerDismissed ? (
+          <BecomeVendorBanner 
+            isDismissed={bannerDismissed}
+            onDismiss={() => setBannerDismissed(true)}
+          />
+        ) : null
     }
   }
 

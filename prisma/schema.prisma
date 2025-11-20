@@ -8,40 +8,36 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String?
-  role          Role      @default(USER) // DEPRECATED: Use userRoles instead
-  image         String?
-  emailVerified DateTime?
-  isBanned      Boolean   @default(false) // Ban status
-  banReason     String?   // Why user was banned
-  bannedAt      DateTime? // When user was banned
-  banExpiresAt  DateTime? // When ban expires (null = permanent)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  addresses      Address[]
-  orders         Order[]
-  paymentMethods PaymentMethod[]
-  reviews        Review[]
-  profile        UserProfile?
-  vendor         Vendor?
-  wishlist       WishlistItem[]
-  cartItems      CartItem[]
-  notifications  Notification[]
-  accounts       Account[]
-  sessions       Session[]
-  flagsReported  ContentFlag[] @relation("FlagReporter")
-  flagsReviewed  ContentFlag[] @relation("FlagReviewer")
-
-  // New multi-role system
-  userRoles         UserRole[]
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String?
+  password          String?
+  role              Role                @default(USER)
+  image             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  emailVerified     DateTime?
+  isBanned          Boolean             @default(false)
+  banReason         String?
+  bannedAt          DateTime?
+  banExpiresAt      DateTime?
+  accounts          Account[]
+  addresses         Address[]
+  cartItems         CartItem[]
+  flagsReported     ContentFlag[]       @relation("FlagReporter")
+  flagsReviewed     ContentFlag[]       @relation("FlagReviewer")
   customerProfile   CustomerProfile?
-  vendorProfile     VendorProfile?
+  notifications     Notification[]
+  orders            Order[]
+  paymentMethods    PaymentMethod[]
+  reviews           Review[]
+  sessions          Session[]
+  profile           UserProfile?
+  userRoles         UserRole[]
   vendorApplication VendorApplication[]
+  vendorProfile     VendorProfile?
+  vendor            Vendor?
+  wishlist          WishlistItem[]
 
   @@map("users")
 }
@@ -72,9 +68,6 @@ model UserProfile {
   @@map("user_profiles")
 }
 
-// DEPRECATED: Use VendorProfile instead
-// This model is kept for backward compatibility during migration
-// Will be removed in future version
 model Vendor {
   id             String   @id @default(cuid())
   userId         String   @unique
@@ -94,9 +87,6 @@ model Vendor {
   monthlyRevenue Float    @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  // Relations commented out - use VendorProfile instead
-  // orders         Order[]
-  // products       Product[]
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("vendors")
@@ -104,7 +94,6 @@ model Vendor {
 
 model Product {
   id               String         @id @default(cuid())
-  vendorUserId     String // Changed from vendorId - now points to VendorProfile.userId
   name             String
   description      String
   price            Float
@@ -122,9 +111,9 @@ model Product {
   co2Reduction     Float          @default(0)
   waterSaving      Float          @default(0)
   energyEfficiency Float          @default(0)
-  dimensions       Json? // {length, width, height, weight}
+  dimensions       Json?
   materials        String[]       @default([])
-  origin           String? // Country/region of origin
+  origin           String?
   nfts             Json[]         @default([])
   featured         Boolean        @default(false)
   active           Boolean        @default(true)
@@ -134,12 +123,13 @@ model Product {
   reviewCount      Int            @default(0)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  vendorUserId     String
+  cartItems        CartItem[]
+  notifications    Notification[]
   orderItems       OrderItem[]
   vendorProfile    VendorProfile  @relation(fields: [vendorUserId], references: [userId], onDelete: Cascade)
   reviews          Review[]
   wishlistItems    WishlistItem[]
-  cartItems        CartItem[]
-  notifications    Notification[]
 
   @@index([vendorUserId])
   @@map("products")
@@ -148,7 +138,6 @@ model Product {
 model Order {
   id                String        @id @default(cuid())
   userId            String
-  vendorUserId      String // Changed from vendorId - now points to VendorProfile.userId
   status            OrderStatus   @default(PENDING)
   total             Float
   subtotal          Float
@@ -163,6 +152,7 @@ model Order {
   stripePaymentId   String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  vendorUserId      String
   items             OrderItem[]
   user              User          @relation(fields: [userId], references: [id])
   vendorProfile     VendorProfile @relation(fields: [vendorUserId], references: [userId])
@@ -194,9 +184,9 @@ model Review {
   comment   String?
   verified  Boolean  @default(false)
   helpful   Int      @default(0)
-  isFlagged Boolean  @default(false) // Whether review has been flagged
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  isFlagged Boolean  @default(false)
   product   Product  @relation(fields: [productId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 
@@ -257,8 +247,8 @@ model CartItem {
   quantity  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("cart_items")
@@ -275,8 +265,8 @@ model Notification {
   read      Boolean          @default(false)
   actionUrl String?
   createdAt DateTime         @default(now())
+  product   Product?         @relation(fields: [productId], references: [id])
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@map("notifications")
 }
@@ -297,21 +287,16 @@ model Category {
   @@map("categories")
 }
 
-// ============================================
-// NEW MULTI-ROLE SYSTEM
-// ============================================
-
 model UserRole {
   id        String   @id @default(cuid())
   userId    String
   role      Role
   grantedAt DateTime @default(now())
-  grantedBy String? // userId of admin who granted this role
+  grantedBy String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role])
   @@index([userId])
@@ -320,123 +305,88 @@ model UserRole {
 }
 
 model CustomerProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  // Preferences
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
   favoriteCategories      String[] @default([])
   sustainabilityInterests String[] @default([])
   priceRange              String?
-
-  // Shopping preferences
   preferredPaymentMethod  String?
   preferredShippingMethod String?
-
-  // Metrics
-  totalOrders       Int     @default(0)
-  totalSpent        Decimal @default(0) @db.Decimal(10, 2)
-  averageOrderValue Decimal @default(0) @db.Decimal(10, 2)
-
-  // Loyalty
-  loyaltyTier  String @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
-  rewardPoints Int    @default(0)
-
-  // Default address
-  defaultAddressId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalOrders             Int      @default(0)
+  totalSpent              Decimal  @default(0) @db.Decimal(10, 2)
+  averageOrderValue       Decimal  @default(0) @db.Decimal(10, 2)
+  loyaltyTier             String   @default("BRONZE")
+  rewardPoints            Int      @default(0)
+  defaultAddressId        String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("customer_profiles")
 }
 
 model VendorProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  // Business Information
-  companyName     String
-  businessType    String? // "LLC", "Individual", "Corporation", etc.
-  taxId           String? // RFC in Mexico
-  businessAddress String?
-  businessPhone   String?
-  website         String?
-
-  // Onboarding
-  onboardingStatus OnboardingStatus @default(PENDING)
-  onboardingStep   Int              @default(0)
-  onboardingData   Json? // Store wizard progress
-
-  // Verification
-  verificationStatus VerificationStatus @default(PENDING)
-  verifiedAt         DateTime?
-  verifiedBy         String? // admin userId
-  rejectionReason    String?            @db.Text
-
-  // Business Details
-  description   String? @db.Text
-  logo          String?
-  banner        String?
-  foundedYear   Int?
-  employeeCount String? // "1-10", "11-50", etc.
-
-  // Financial
-  bankAccount     String? @db.Text // Encrypted CLABE
-  bankName        String?
-  accountHolder   String?
-  stripeAccountId String? @unique
-  stripeOnboarded Boolean @default(false)
-
-  // Commission
-  commissionRate   Decimal @default(15) @db.Decimal(5, 2) // 15%
-  customCommission Boolean @default(false)
-
-  // Metrics
-  totalProducts  Int     @default(0)
-  activeProducts Int     @default(0)
-  totalSales     Decimal @default(0) @db.Decimal(10, 2)
-  totalOrders    Int     @default(0)
-  averageRating  Float   @default(0)
-  reviewCount    Int     @default(0)
-
-  // Performance
-  responseTime       Int? // Average response time in hours
-  fulfillmentRate    Float @default(100) // Percentage
-  onTimeDeliveryRate Float @default(100) // Percentage
-
-  // Status
-  active          Boolean   @default(true)
-  suspended       Boolean   @default(false)
-  suspendedReason String?   @db.Text
-  suspendedAt     DateTime?
-  suspendedBy     String? // admin userId
-  isBanned        Boolean   @default(false) // Permanent ban
-  banReason       String?   @db.Text
-  bannedAt        DateTime?
-  bannedBy        String? // admin userId
-
-  // Sustainability (RegenMark System)
-  regenScore            Int       @default(0) // 0-100 calculated score
-  nftLevel              NFTLevel  @default(VERDE_CLARO)
-  certifications        String[]  @default([])
-  sustainabilityGoals   String[]  @default([])
-  sustainabilityMetrics Json? // Full metrics JSON storage
+  id                    String                @id @default(cuid())
+  userId                String                @unique
+  companyName           String
+  businessType          String?
+  taxId                 String?
+  businessAddress       String?
+  businessPhone         String?
+  website               String?
+  onboardingStatus      OnboardingStatus      @default(PENDING)
+  onboardingStep        Int                   @default(0)
+  onboardingData        Json?
+  verificationStatus    VerificationStatus    @default(PENDING)
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  rejectionReason       String?
+  description           String?
+  logo                  String?
+  banner                String?
+  foundedYear           Int?
+  employeeCount         String?
+  bankAccount           String?
+  bankName              String?
+  accountHolder         String?
+  stripeAccountId       String?               @unique
+  stripeOnboarded       Boolean               @default(false)
+  commissionRate        Decimal               @default(15) @db.Decimal(5, 2)
+  customCommission      Boolean               @default(false)
+  totalProducts         Int                   @default(0)
+  activeProducts        Int                   @default(0)
+  totalSales            Decimal               @default(0) @db.Decimal(10, 2)
+  totalOrders           Int                   @default(0)
+  averageRating         Float                 @default(0)
+  reviewCount           Int                   @default(0)
+  responseTime          Int?
+  fulfillmentRate       Float                 @default(100)
+  onTimeDeliveryRate    Float                 @default(100)
+  active                Boolean               @default(true)
+  suspended             Boolean               @default(false)
+  suspendedReason       String?
+  suspendedAt           DateTime?
+  suspendedBy           String?
+  regenScore            Int                   @default(0)
+  certifications        String[]              @default([])
+  sustainabilityGoals   String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
   metricsLastUpdated    DateTime?
-  metricsVerified       Boolean   @default(false)
-  metricsVerifiedBy     String? // admin userId
+  metricsVerified       Boolean               @default(false)
   metricsVerifiedAt     DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products    Product[]
-  orders      Order[]
-  regenMarks  RegenMark[]
-  evaluations RegenMarkEvaluation[]
+  metricsVerifiedBy     String?
+  nftLevel              NFTLevel              @default(VERDE_CLARO)
+  sustainabilityMetrics Json?
+  banReason             String?
+  bannedAt              DateTime?
+  bannedBy              String?
+  isBanned              Boolean               @default(false)
+  orders                Order[]
+  products              Product[]
+  evaluations           RegenMarkEvaluation[]
+  regenMarks            RegenMark[]
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([verificationStatus])
   @@index([active])
@@ -446,34 +396,25 @@ model VendorProfile {
 }
 
 model VendorApplication {
-  id     String @id @default(cuid())
-  userId String
-
-  // Business Info
+  id              String            @id @default(cuid())
+  userId          String
   companyName     String
   businessType    String
   taxId           String?
-  description     String? @db.Text
+  description     String?
   website         String?
   businessPhone   String?
   businessAddress String?
-
-  // Documents (JSON with URLs)
-  documents Json? // { idDocument, taxDocument, proofOfAddress, etc. }
-
-  // Review
+  documents       Json?
   status          ApplicationStatus @default(PENDING)
-  reviewedBy      String? // admin userId
+  reviewedBy      String?
   reviewedAt      DateTime?
-  rejectionReason String?           @db.Text
-  internalNotes   String?           @db.Text // Admin notes
-
-  // Tracking
-  submittedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rejectionReason String?
+  internalNotes   String?
+  submittedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -481,46 +422,27 @@ model VendorApplication {
   @@map("vendor_applications")
 }
 
-// ============================================
-// REGENMARK SYSTEM
-// ============================================
-
 model RegenMark {
-  id              String        @id @default(cuid())
+  id              String                @id @default(cuid())
   vendorProfileId String
   type            RegenMarkType
-
-  // Scoring
-  score    Int @default(0) // 0-100 for this specific RegenMark
-  maxScore Int @default(100)
-
-  // Status and lifecycle
-  status RegenMarkStatus @default(PENDING)
-  level  String? // "Bronze", "Silver", "Gold", "Platinum" (optional tier within RegenMark)
-
-  // Validity period
-  issuedAt      DateTime?
-  expiresAt     DateTime?
-  lastRenewedAt DateTime?
-
-  // Verification
-  verifiedBy String? // evaluator userId
-  verifiedAt DateTime?
-
-  // Metrics (JSON storage for flexibility)
-  metrics  Json? // Specific metrics for this RegenMark type
-  evidence Json? // Links to documents, certificates, etc.
-
-  // Evaluation history
-  evaluationNotes String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  vendorProfile VendorProfile         @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
-  evaluations   RegenMarkEvaluation[]
-  documents     Document[]
+  score           Int                   @default(0)
+  maxScore        Int                   @default(100)
+  status          RegenMarkStatus       @default(PENDING)
+  level           String?
+  issuedAt        DateTime?
+  expiresAt       DateTime?
+  lastRenewedAt   DateTime?
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  metrics         Json?
+  evidence        Json?
+  evaluationNotes String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  documents       Document[]
+  evaluations     RegenMarkEvaluation[]
+  vendorProfile   VendorProfile         @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
 
   @@index([vendorProfileId])
   @@index([type])
@@ -530,48 +452,33 @@ model RegenMark {
 }
 
 model RegenMarkEvaluation {
-  id              String        @id @default(cuid())
+  id              String           @id @default(cuid())
   regenMarkId     String?
   vendorProfileId String
   type            RegenMarkType
-
-  // Evaluation details
-  status EvaluationStatus @default(PENDING)
-  stage  EvaluationStage  @default(SUBMITTED)
-
-  // AI Processing
-  aiProcessed   Boolean   @default(false)
-  aiScore       Int?      @default(0)
-  aiFlags       Json? // Anomalies detected by AI
-  aiProcessedAt DateTime?
-
-  // Manual review
-  reviewerId    String? // admin/evaluator userId
-  reviewerNotes String?   @db.Text
-  reviewScore   Int?
-  reviewedAt    DateTime?
-
-  // Final results
-  finalScore Int?
-  approved   Boolean @default(false)
-  feedback   String? @db.Text
-
-  // Payment
-  paymentAmount   Decimal?      @db.Decimal(10, 2)
-  paymentStatus   PaymentStatus @default(PENDING)
+  status          EvaluationStatus @default(PENDING)
+  stage           EvaluationStage  @default(SUBMITTED)
+  aiProcessed     Boolean          @default(false)
+  aiScore         Int?             @default(0)
+  aiFlags         Json?
+  aiProcessedAt   DateTime?
+  reviewerId      String?
+  reviewerNotes   String?
+  reviewScore     Int?
+  reviewedAt      DateTime?
+  finalScore      Int?
+  approved        Boolean          @default(false)
+  feedback        String?
+  paymentAmount   Decimal?         @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus    @default(PENDING)
   stripePaymentId String?
-
-  // Timeline
-  submittedAt DateTime?
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  vendorProfile VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
-  regenMark     RegenMark?    @relation(fields: [regenMarkId], references: [id], onDelete: SetNull)
-  documents     Document[]
+  submittedAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  documents       Document[]
+  regenMark       RegenMark?       @relation(fields: [regenMarkId], references: [id])
+  vendorProfile   VendorProfile    @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
 
   @@index([vendorProfileId])
   @@index([status])
@@ -581,42 +488,29 @@ model RegenMarkEvaluation {
 }
 
 model Document {
-  id                    String  @id @default(cuid())
+  id                    String               @id @default(cuid())
   regenMarkEvaluationId String?
   regenMarkId           String?
-
-  // Document info
-  type        DocumentType
-  name        String
-  description String?
-
-  // File storage
-  url      String // S3, Cloudinary, etc.
-  fileName String
-  fileSize Int // bytes
-  mimeType String
-
-  // AI processing
-  aiExtractedData Json? // OCR/NLP extracted data
-  aiVerified      Boolean @default(false)
-  aiFlags         Json? // Fraud detection flags
-
-  // Manual verification
-  manuallyVerified  Boolean   @default(false)
-  verifiedBy        String? // admin userId
-  verifiedAt        DateTime?
-  verificationNotes String?
-
-  // Metadata
-  uploadedBy String // userId
-  uploadedAt DateTime @default(now())
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  evaluation RegenMarkEvaluation? @relation(fields: [regenMarkEvaluationId], references: [id], onDelete: Cascade)
-  regenMark  RegenMark?           @relation(fields: [regenMarkId], references: [id], onDelete: Cascade)
+  type                  DocumentType
+  name                  String
+  description           String?
+  url                   String
+  fileName              String
+  fileSize              Int
+  mimeType              String
+  aiExtractedData       Json?
+  aiVerified            Boolean              @default(false)
+  aiFlags               Json?
+  manuallyVerified      Boolean              @default(false)
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  verificationNotes     String?
+  uploadedBy            String
+  uploadedAt            DateTime             @default(now())
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  evaluation            RegenMarkEvaluation? @relation(fields: [regenMarkEvaluationId], references: [id], onDelete: Cascade)
+  regenMark             RegenMark?           @relation(fields: [regenMarkId], references: [id], onDelete: Cascade)
 
   @@index([regenMarkEvaluationId])
   @@index([regenMarkId])
@@ -624,15 +518,85 @@ model Document {
   @@map("documents")
 }
 
-// ============================================
-// ENUMS
-// ============================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model ContentFlag {
+  id          String     @id @default(cuid())
+  type        FlagType
+  targetId    String
+  reason      String
+  description String?
+  status      FlagStatus @default(PENDING)
+  severity    String     @default("medium")
+  reportedBy  String
+  reviewedBy  String?
+  resolution  String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  reporter    User       @relation("FlagReporter", fields: [reportedBy], references: [id], onDelete: Cascade)
+  reviewer    User?      @relation("FlagReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("content_flags")
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  group     String
+  key       String
+  value     Json
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([group, key])
+  @@index([group])
+  @@map("platform_settings")
+}
 
 enum Role {
-  CUSTOMER // Default role for all new users (renamed from USER)
-  VENDOR // Seller role (granted after approval)
-  ADMIN // Administrator
-  USER // DEPRECATED - kept for backward compatibility
+  USER
+  VENDOR
+  ADMIN
+  CUSTOMER
 }
 
 enum OnboardingStatus {
@@ -700,177 +664,80 @@ enum NotificationType {
   NFT_LEVEL_DOWN
 }
 
-// RegenMark System Enums
 enum NFTLevel {
-  VERDE_CLARO // 0-19 points
-  HOJA_ACTIVA // 20-39 points
-  ECO_GUARDIA // 40-59 points
-  ESTRELLA_VERDE // 60-79 points
-  HUELLA_CERO // 80-100 points
+  VERDE_CLARO
+  HOJA_ACTIVA
+  ECO_GUARDIA
+  ESTRELLA_VERDE
+  HUELLA_CERO
 }
 
 enum RegenMarkType {
-  CARBON_SAVER // Carbon emissions, energy, climate
-  WATER_GUARDIAN // Water conservation, management
-  CIRCULAR_CHAMPION // Waste, recycling, circular economy
-  HUMAN_FIRST // Social impact, labor, community
-  HUMANE_HERO // Cruelty-free, animal welfare
+  CARBON_SAVER
+  WATER_GUARDIAN
+  CIRCULAR_CHAMPION
+  HUMAN_FIRST
+  HUMANE_HERO
 }
 
 enum RegenMarkStatus {
-  PENDING // Initial state, not yet evaluated
-  IN_EVALUATION // Currently being evaluated
-  ACTIVE // Approved and active
-  EXPIRING_SOON // 60 days before expiration
-  EXPIRED // Past expiration date
-  SUSPENDED // Temporarily suspended
-  REVOKED // Permanently revoked
-  REJECTED // Evaluation rejected
+  PENDING
+  IN_EVALUATION
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  SUSPENDED
+  REVOKED
+  REJECTED
 }
 
 enum EvaluationStatus {
-  PENDING // Payment pending
-  PAID // Payment confirmed
-  SUBMITTED // Documents submitted
-  AI_PROCESSING // AI is processing documents
-  IN_REVIEW // Manual review in progress
-  APPROVED // Evaluation approved
-  REJECTED // Evaluation rejected
-  CANCELLED // Cancelled by vendor
+  PENDING
+  PAID
+  SUBMITTED
+  AI_PROCESSING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum EvaluationStage {
-  PAYMENT // Waiting for payment
-  SUBMITTED // Documents submitted
-  AI_ANALYSIS // AI processing
-  MANUAL_REVIEW // Human reviewer checking
-  FINAL_REVIEW // Final verification
-  COMPLETED // Evaluation complete
+  PAYMENT
+  SUBMITTED
+  AI_ANALYSIS
+  MANUAL_REVIEW
+  FINAL_REVIEW
+  COMPLETED
 }
 
 enum DocumentType {
-  // Carbon Saver
   CARBON_FOOTPRINT_REPORT
   ENERGY_BILLS
   CARBON_OFFSET_CERTIFICATE
   ISO_14001_CERTIFICATE
-
-  // Water Guardian
   WATER_BILLS
   WATER_RECYCLING_EVIDENCE
   WATER_AUDIT_REPORT
   WATER_TREATMENT_PHOTOS
-
-  // Circular Champion
   WASTE_MANAGEMENT_RECORDS
   RECYCLING_CONTRACTS
   CIRCULAR_ECONOMY_EVIDENCE
   ZERO_WASTE_CERTIFICATE
-
-  // Human First
   LABOR_POLICY_DOCUMENT
   COMMUNITY_PROGRAMS_EVIDENCE
   SUSTAINABILITY_REPORT
   B_CORP_CERTIFICATE
   FAIR_TRADE_CERTIFICATE
-
-  // Humane Hero
   CRUELTY_FREE_CERTIFICATE
   ANIMAL_WELFARE_AUDIT
   NO_TESTING_POLICY
   ETHICAL_SUPPLY_CHAIN_CERT
-
-  // General
   BUSINESS_LICENSE
   TAX_DOCUMENT
   OTHER
 }
 
-// NextAuth required tables
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-// ============================================
-// CONTENT MODERATION
-// ============================================
-model ContentFlag {
-  id           String        @id @default(cuid())
-  type         FlagType      // REVIEW, PRODUCT, VENDOR, USER, MESSAGE
-  targetId     String        // ID of the flagged content
-  reason       String        // Why it's being flagged
-  description  String?       // Detailed description
-  status       FlagStatus    @default(PENDING) // PENDING, REVIEWED, RESOLVED, DISMISSED
-  severity     String        @default("medium") // low, medium, high, critical
-  reportedBy   String        // User who reported it
-  reviewedBy   String?       // Admin who reviewed it
-  resolution   String?       // What action was taken
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  reporter     User          @relation("FlagReporter", fields: [reportedBy], references: [id], onDelete: Cascade)
-  reviewer     User?         @relation("FlagReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-
-  @@index([status])
-  @@index([type])
-  @@index([createdAt])
-  @@map("content_flags")
-}
-
-// ============================================
-// PLATFORM SETTINGS (Key-Value Store)
-// ============================================
-model PlatformSetting {
-  id        String   @id @default(cuid())
-  group     String   // e.g. 'general', 'regenScore', 'commissions', 'payments', 'shipping', 'policies'
-  key       String   // e.g. 'maintenanceMode'
-  value     Json     // Typed in application layer
-  updatedBy String?  // admin userId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([group, key])
-  @@index([group])
-  @@map("platform_settings")
-}
-
-// ============================================
-// ENUMS FOR MODERATION
-// ============================================
 enum FlagType {
   REVIEW
   PRODUCT

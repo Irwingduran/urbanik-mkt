@@ -7,6 +7,7 @@ import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ReduxProvider } from '@/lib/providers/ReduxProvider'
+import { RoleChangeListener } from '@/components/auth/RoleChangeListener'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ export function Providers({ children }: ProvidersProps) {
     <SessionProvider>
       <ReduxProvider>
         <QueryClientProvider client={queryClient}>
+          <RoleChangeListener />
           {children}
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>

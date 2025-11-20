@@ -6,9 +6,12 @@ import { prisma } from "@/lib/prisma"
 // GET /api/admin/dashboard - Admin dashboard overview
 export async function GET(request: NextRequest) {
   try {
+    console.log('[DEBUG] Admin dashboard endpoint called')
     const session = await getServerSession(authOptions)
+    console.log('[DEBUG] Session:', session?.user?.email, 'Role:', session?.user?.role)
 
     if (!session || session.user.role !== "ADMIN") {
+      console.log('[DEBUG] Unauthorized: no session or not admin role')
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -132,9 +135,14 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("Admin dashboard error:", error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error("Admin dashboard error:", errorMessage)
+    console.error("Full error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

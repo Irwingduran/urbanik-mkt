@@ -54,7 +54,11 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
           include: {
             profile: true,
-            vendor: true
+            vendor: true,
+            userRoles: {
+              where: { active: true },
+              select: { role: true }
+            }
           }
         })
 
@@ -71,11 +75,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Build roles array: use userRoles if available, fallback to user.role
+        const roles = user.userRoles.length > 0 
+          ? user.userRoles.map(ur => ur.role as Role)
+          : [user.role as Role]
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
+          roles: roles,
           image: user.image,
         }
       },
@@ -90,20 +100,55 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      // Initial sign in - get roles from user object or fetch fresh from DB
       if (user) {
         token.userId = user.id
         token.role = user.role
-        token.roles = user.roles || [user.role]
+        // Use roles from authorize() response if available, otherwise fallback to single role
+        token.roles = (user as any).roles || [user.role]
+        token.lastRoleRefresh = Date.now()
       }
 
-      // Handle session update - refresh roles from database
-      if (trigger === "update" && token.userId) {
-        const userRoles = await prisma.userRole.findMany({
-          where: { userId: token.userId as string, active: true },
-          select: { role: true }
-        })
-        token.roles = userRoles.map(ur => ur.role as Role)
-        token.role = token.roles[0] || 'USER'
+      // Refresh roles from database periodically
+      // This ensures role changes are picked up automatically
+      if (token.userId) {
+        const lastRefresh = token.lastRoleRefresh as number || 0
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+
+        // Refresh if explicitly triggered or 5+ minutes have passed
+        if (trigger === "update" || (now - lastRefresh) > fiveMinutes) {
+          try {
+            // Get all active roles for this user from userRoles table
+            const userRoles = await prisma.userRole.findMany({
+              where: { userId: token.userId as string, active: true },
+              select: { role: true }
+            })
+
+            // Get fallback role from users table
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.userId as string },
+              select: { role: true }
+            })
+
+            // Update token with fresh roles
+            if (userRoles.length > 0) {
+              token.roles = userRoles.map(ur => ur.role as Role)
+              token.role = token.roles[0]
+            } else if (dbUser?.role) {
+              token.roles = [dbUser.role as Role]
+              token.role = dbUser.role as Role
+            } else {
+              token.roles = ['USER']
+              token.role = 'USER'
+            }
+
+            token.lastRoleRefresh = now
+          } catch (error) {
+            console.error('Error refreshing user roles:', error)
+            // Fallback to existing roles if DB query fails
+          }
+        }
       }
 
       return token

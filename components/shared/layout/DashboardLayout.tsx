@@ -209,6 +209,13 @@ const navigationItems: NavItem[] = [
     roles: [UserRole.ADMIN],
     ariaLabel: 'Gestionar reportes de contenido'
   },
+  {
+    label: 'Perfil',
+    href: '/dashboard/admin/profile',
+    icon: User,
+    roles: [UserRole.ADMIN],
+    ariaLabel: 'Mi perfil de administrador'
+  },
 ]
 
 // ============================================================================

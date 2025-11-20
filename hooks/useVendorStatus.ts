@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 
 export type VendorStatus =
@@ -39,6 +39,10 @@ export function useVendorStatus(): VendorStatusData {
   const [error, setError] = useState<string | null>(null)
   const [application, setApplication] = useState<VendorStatusData['application']>()
   const [vendorProfile, setVendorProfile] = useState<VendorStatusData['vendorProfile']>()
+  
+  // Ref para evitar múltiples fetches simultáneos
+  const isFetchingRef = useRef(false)
+  const hasInitializedRef = useRef(false)
 
   const fetchVendorStatus = useCallback(async () => {
     // Don't fetch if not authenticated
@@ -47,7 +51,13 @@ export function useVendorStatus(): VendorStatusData {
       return
     }
 
+    // Evitar múltiples fetches simultáneos
+    if (isFetchingRef.current) {
+      return
+    }
+
     try {
+      isFetchingRef.current = true
       setIsLoading(true)
       setError(null)
 
@@ -72,12 +82,17 @@ export function useVendorStatus(): VendorStatusData {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setIsLoading(false)
+      isFetchingRef.current = false
     }
-  }, [session, sessionStatus])
+  }, [session?.user?.email, sessionStatus])
 
   useEffect(() => {
-    fetchVendorStatus()
-  }, [fetchVendorStatus])
+    // Solo fetch una vez al inicializar si está autenticado
+    if (sessionStatus === 'authenticated' && !hasInitializedRef.current) {
+      hasInitializedRef.current = true
+      fetchVendorStatus()
+    }
+  }, [sessionStatus, fetchVendorStatus])
 
   return {
     status,
