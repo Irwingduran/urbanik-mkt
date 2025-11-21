@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
 import { ProductApprovalStatus } from "@prisma/client"
 import { computeProductRegenScore } from "@/lib/regenmark/services/product"
+import { CreateProductSchema } from "@/lib/validation/product"
+import { createTracer } from "@/lib/trace"
+import { logger } from "@/lib/logger"
 
 // GET /api/vendor/products - List vendor's products
 export async function GET(request: NextRequest) {
@@ -132,7 +135,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const body = await request.json()
+  const requestId = request.headers.get("x-request-id") || undefined
+  const tracer = createTracer("api.vendor.products.create", { requestId })
+  const end = tracer.start("POST /api/vendor/products")
+  const body = await request.json()
+  logger.debug("Incoming product create body", { requestId, keys: Object.keys(body) })
 
     // Get vendor user ID
     let vendorUserId: string
@@ -143,6 +150,31 @@ export async function POST(request: NextRequest) {
       }
     } else {
       vendorUserId = session.user.id
+    }
+    // Validation & normalization (Zod)
+    const parsed = CreateProductSchema.safeParse({
+      name: body.name,
+      description: body.description,
+      price: body.price,
+      originalPrice: body.originalPrice,
+      sku: body.sku,
+      category: body.category,
+      images: body.images,
+      stock: body.stock,
+      minStock: body.minStock,
+      certifications: body.certifications,
+      co2Reduction: body.co2Reduction,
+      waterSaving: body.waterSaving,
+      energyEfficiency: body.energyEfficiency,
+    })
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors
+      end({ error: "VALIDATION_FAILED", fieldErrors })
+      return NextResponse.json({
+        error: "Validation failed",
+        code: "VALIDATION_FAILED",
+        details: fieldErrors,
+      }, { status: 400 })
     }
     const {
       name,
@@ -158,21 +190,13 @@ export async function POST(request: NextRequest) {
       co2Reduction,
       waterSaving,
       energyEfficiency
-    } = body
-
-    // Validation
-    if (!name || !description || !price || !sku || !category) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      )
-    }
+    } = parsed.data
 
     // PRODUCTION: Validate vendor profile exists and is allowed to create products
-    const vendorProfile = await prisma.vendorProfile.findUnique({
+    const vendorProfile = await tracer.span("fetchVendorProfile", async () => prisma.vendorProfile.findUnique({
       where: { userId: vendorUserId },
       select: { userId: true, isBanned: true, active: true, suspended: true }
-    })
+    }))
 
     if (!vendorProfile) {
       return NextResponse.json(
@@ -196,13 +220,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if SKU is unique for this vendor
-    const existingSku = await prisma.product.findFirst({
-      where: {
-        vendorUserId: vendorUserId,
-        sku
-      },
+    const existingSku = await tracer.span("checkExistingSku", async () => prisma.product.findFirst({
+      where: { vendorUserId: vendorUserId, sku },
       select: { id: true }
-    })
+    }))
 
     if (existingSku) {
       return NextResponse.json(
@@ -215,56 +236,59 @@ export async function POST(request: NextRequest) {
 
     // Calculate regen score based on environmental metrics (centralized service)
     const { score: regenScore } = computeProductRegenScore({
-      co2Reduction: parseFloat(co2Reduction) || 0,
-      waterSaving: parseFloat(waterSaving) || 0,
-      energyEfficiency: parseFloat(energyEfficiency) || 0,
+      co2Reduction: co2Reduction || 0,
+      waterSaving: waterSaving || 0,
+      energyEfficiency: energyEfficiency || 0,
     })
 
     // Use a transaction to ensure consistency between product creation and counters
-    const product = await prisma.$transaction(async (tx) => {
+    const product = await tracer.span("createProductTransaction", async () => prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
         data: {
           vendorUserId: vendorUserId,
           name,
           description,
-          price: parseFloat(price),
-          originalPrice: originalPrice ? parseFloat(originalPrice) : null,
+          price,
+          originalPrice: originalPrice ?? null,
           sku,
           category,
           images: images || [],
-          stock: parseInt(stock) || 0,
-          minStock: parseInt(minStock) || 5,
-          inStock: parseInt(stock) > 0,
+          stock,
+          minStock: minStock ?? 5,
+          inStock: stock > 0,
           certifications: certifications || [],
-          co2Reduction: parseFloat(co2Reduction) || 0,
-          waterSaving: parseFloat(waterSaving) || 0,
-          energyEfficiency: parseFloat(energyEfficiency) || 0,
+          co2Reduction: co2Reduction || 0,
+          waterSaving: waterSaving || 0,
+          energyEfficiency: energyEfficiency || 0,
           regenScore,
           active: true,
           approvalStatus: ProductApprovalStatus.PENDING
         }
       })
-
       await tx.vendorProfile.update({
         where: { userId: vendorUserId },
         data: { totalProducts: { increment: 1 } }
       })
-
       return created
-    })
+    }))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: product,
       message: "Product created successfully"
     })
+    if (requestId) response.headers.set("x-request-id", requestId)
+    end({ productId: product.id, regenScore })
+    return response
 
   } catch (error) {
     console.error("Product creation error:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json(
-      { error: "Internal server error", details: errorMessage },
-      { status: 500 }
-    )
+    logger.error("Product creation failed", { error: errorMessage })
+    return NextResponse.json({
+      error: "Internal server error",
+      code: "PRODUCT_CREATE_FAILED",
+      details: errorMessage,
+    }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+// const prisma = new PrismaClient()
 
 async function testRegistration() {
   console.log('🧪 Testing Registration Flow\n')

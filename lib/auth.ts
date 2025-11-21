@@ -2,12 +2,13 @@ import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 import { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { authOptions } from "@/lib/auth-config"
 
 /**
  * Get the current authenticated user from server-side
  */
 export async function getCurrentUser() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   return session?.user
 }
 
@@ -30,7 +31,7 @@ export async function getUserRoles(userId: string): Promise<Role[]> {
  * Require authentication, redirect to login if not authenticated
  */
 export async function requireAuth() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   if (!session) {
     redirect("/auth/signin")
   }

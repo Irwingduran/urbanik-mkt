@@ -4,9 +4,9 @@
  * Uso: npx ts-node scripts/check-vendor-status.ts <email>
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 
-const prisma = new PrismaClient()
+// const prisma = new PrismaClient()
 
 async function checkVendorStatus(email: string) {
   try {

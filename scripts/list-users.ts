@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 
-const prisma = new PrismaClient()
+// const prisma = new PrismaClient()
 
 async function main() {
   console.log('📋 Usuarios registrados en la base de datos:\n')

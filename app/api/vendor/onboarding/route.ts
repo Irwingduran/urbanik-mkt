@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
       website,
       phone,
       email,
-      businessAddress,
+      address,
       category,
       certifications,
       sustainabilityGoals,
       sustainabilityIntent,
       contactName,
-  environmentalCertifications,
-  certificationDocuments,
+      environmentalCertifications,
+      certificationDocuments,
       laborPractices,
       communityImpact,
       laborCompliance,
@@ -91,63 +91,71 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has a pending or in-review application
-    if (user.vendorApplication && user.vendorApplication.length > 0) {
-      const currentApplication = user.vendorApplication[0]
+    let application;
+    const existingApplication = user.vendorApplication && user.vendorApplication.length > 0 ? user.vendorApplication[0] : null;
+
+    if (existingApplication && existingApplication.status === 'IN_REVIEW') {
       return NextResponse.json(
         {
-          error: currentApplication.status === 'PENDING'
-            ? 'Ya tienes una solicitud pendiente'
-            : 'Tu solicitud está siendo revisada',
-          application: currentApplication
+          error: 'Tu solicitud está siendo revisada',
+          application: existingApplication
         },
         { status: 400 }
       )
     }
 
-    // If user was REJECTED, they can apply again (no blocking here)
-
-    // Create vendor application
-    const application = await prisma.vendorApplication.create({
-      data: {
-        userId: user.id,
-        companyName,
-        businessType, // LLC, Individual, Corporation, etc.
-        description: description || null,
+    const applicationData = {
+      userId: user.id,
+      companyName,
+      businessType, // LLC, Individual, Corporation, etc.
+      description: description || null,
+      website: website || null,
+      businessPhone: phone,
+      businessAddress: address || null,
+      taxId: null, // Can be added later
+      // Store additional data in documents JSON field
+      documents: {
+        // Core
+        category,
+        contactName: contactName || user.name,
+        contactEmail: email,
+        // Sustainability (legacy + new)
+        certifications: certifications || [],
+        sustainabilityGoals: sustainabilityGoals || [],
+        sustainabilityIntent: sustainabilityIntent || '',
+        environmentalCertifications: environmentalCertifications || [],
+        certificationDocuments: certificationDocuments || [],
+        // Social
+        laborPractices: laborPractices || '',
+        communityImpact: communityImpact || '',
+        laborCompliance: laborCompliance || '',
+        fairTradeCertified: !!fairTradeCertified,
+        localSourcingPercent: localSourcingPercent ? parseFloat(localSourcingPercent) : null,
+        // Animal welfare
+        animalTestingPolicy: animalTestingPolicy || null,
+        animalOriginUse: animalOriginUse || null,
+        animalWelfarePolicies: animalWelfarePolicies || '',
+        ethicalAlternatives: ethicalAlternatives || '',
+        // Meta
         website: website || null,
-        businessPhone: phone,
-        businessAddress: businessAddress || null,
-        taxId: null, // Can be added later
-        // Store additional data in documents JSON field
-        documents: {
-          // Core
-          category,
-          contactName: contactName || user.name,
-          contactEmail: email,
-          // Sustainability (legacy + new)
-          certifications: certifications || [],
-          sustainabilityGoals: sustainabilityGoals || [],
-          sustainabilityIntent: sustainabilityIntent || '',
-          environmentalCertifications: environmentalCertifications || [],
-          certificationDocuments: certificationDocuments || [],
-          // Social
-          laborPractices: laborPractices || '',
-          communityImpact: communityImpact || '',
-          laborCompliance: laborCompliance || '',
-          fairTradeCertified: !!fairTradeCertified,
-          localSourcingPercent: typeof localSourcingPercent === 'number' ? localSourcingPercent : null,
-          // Animal welfare
-          animalTestingPolicy: animalTestingPolicy || null,
-          animalOriginUse: animalOriginUse || null,
-          animalWelfarePolicies: animalWelfarePolicies || '',
-          ethicalAlternatives: ethicalAlternatives || '',
-          // Meta
-          website: website || null,
-          businessAddress: businessAddress || null,
-        },
-        status: 'PENDING',
-        submittedAt: new Date()
-      }
-    })
+        businessAddress: address || null,
+      },
+      status: 'PENDING' as const,
+      submittedAt: new Date()
+    };
+
+    if (existingApplication && existingApplication.status === 'PENDING') {
+      // Update existing pending application
+      application = await prisma.vendorApplication.update({
+        where: { id: existingApplication.id },
+        data: applicationData
+      });
+    } else {
+      // Create new application
+      application = await prisma.vendorApplication.create({
+        data: applicationData
+      });
+    }
 
     return NextResponse.json({
       success: true,

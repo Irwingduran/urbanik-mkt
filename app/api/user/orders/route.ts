@@ -8,8 +8,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || (session.user.role !== "USER" && session.user.role !== "ADMIN")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    const userRoles = session?.user?.roles || (session?.user?.role ? [session.user.role] : [])
+    const hasPermission = userRoles.some((r: string) => ['USER', 'CUSTOMER', 'ADMIN'].includes(r))
+
+    if (!session || !hasPermission) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)

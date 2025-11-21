@@ -75,6 +75,9 @@ export default withAuth(
     }
 
     // Pass through modified headers
+    if (userRoles.length > 0) {
+      requestHeaders.set("x-user-roles", userRoles.join(","))
+    }
     return NextResponse.next({ request: { headers: requestHeaders } })
   },
   {

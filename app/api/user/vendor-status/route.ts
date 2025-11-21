@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export type VendorStatus =
   | 'not_applied'
@@ -27,6 +28,13 @@ export interface VendorStatusResponse {
     verificationStatus: string
     active: boolean
     onboardingStatus: string
+  }
+  debug?: {
+    userId: string
+    userRole: string
+    roles: string[]
+    evaluatedHasVendorRole: boolean
+    vendorProfilePresent: boolean
   }
 }
 
@@ -87,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has VENDOR role
-    const hasVendorRole = user.userRoles.some(ur => ur.role === 'VENDOR')
+  const hasVendorRole = user.userRoles.some(ur => ur.role === 'VENDOR') || user.role === 'VENDOR'
 
     // Determine status
     let status: VendorStatus = 'not_applied'
@@ -95,14 +103,17 @@ export async function GET(request: NextRequest) {
     let vendorProfile = undefined
 
     // Priority 1: Has active vendor profile and role
-    if (user.vendorProfile && user.vendorProfile.active && hasVendorRole) {
-      status = 'approved'
-      vendorProfile = user.vendorProfile
+    // Prioritize already approved vendor profile (either active true or onboardingStatus APPROVED)
+    if (user.vendorProfile && hasVendorRole) {
+      const vp = user.vendorProfile
+      if (vp.active || vp.onboardingStatus === 'APPROVED' || vp.verificationStatus === 'VERIFIED') {
+        status = 'approved'
+        vendorProfile = vp
+      }
     }
-    // Priority 2: Has pending or in-review application
-    else if (user.vendorApplication && user.vendorApplication.length > 0) {
-      // IMPORTANT: Prioritize PENDING/IN_REVIEW over REJECTED
-      // This prevents users from accessing onboarding if they have an active application
+
+    // If not approved yet, inspect applications
+    if (status !== 'approved' && user.vendorApplication && user.vendorApplication.length > 0) {
       const pendingApp = user.vendorApplication.find(app => app.status === 'PENDING')
       const inReviewApp = user.vendorApplication.find(app => app.status === 'IN_REVIEW')
       const rejectedApp = user.vendorApplication.find(app => app.status === 'REJECTED')
@@ -118,16 +129,34 @@ export async function GET(request: NextRequest) {
         application = rejectedApp
       }
     }
-    // Priority 3: Never applied
-    else {
+
+    // If still no status determined
+    if (status === 'not_applied' && !user.vendorApplication?.length && !vendorProfile) {
       status = 'not_applied'
     }
+
+    logger.debug('vendor-status.evaluated', {
+      userId: user.id,
+      hasVendorRole,
+      finalStatus: status,
+      hasVendorProfile: !!vendorProfile,
+      vendorProfileActive: vendorProfile?.active,
+      vendorProfileOnboarding: vendorProfile?.onboardingStatus,
+      applicationsCount: user.vendorApplication?.length || 0
+    })
 
     const response: VendorStatusResponse = {
       status,
       hasVendorRole,
       application: application || undefined,
-      vendorProfile: vendorProfile || undefined
+      vendorProfile: vendorProfile || undefined,
+      debug: {
+        userId: user.id,
+        userRole: user.role,
+        roles: user.userRoles.map(r => r.role),
+        evaluatedHasVendorRole: hasVendorRole,
+        vendorProfilePresent: !!vendorProfile
+      }
     }
 
     return NextResponse.json(response)

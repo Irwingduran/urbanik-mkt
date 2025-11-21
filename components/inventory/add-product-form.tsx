@@ -26,6 +26,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react"
+import { apiFetch } from "@/lib/api-client"
 
 interface AddProductFormProps {
   onBack: () => void
@@ -256,8 +257,28 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
+  const [clientErrors, setClientErrors] = useState<string[]>([])
+
+  const validateClient = () => {
+    const errs: string[] = []
+    if (!formData.name) errs.push("Nombre es requerido")
+    if (!formData.sku) errs.push("SKU es requerido")
+    if (!formData.category) errs.push("Categoría es requerida")
+    if (!formData.price) errs.push("Precio es requerido")
+    if (!formData.description || formData.description.length < 10) errs.push("Descripción mínima 10 caracteres")
+    if (!formData.stock) errs.push("Stock inicial requerido")
+    return errs
+  }
+
   const handleSubmit = async () => {
     try {
+      const errs = validateClient()
+      if (errs.length) {
+        setClientErrors(errs)
+        return
+      } else {
+        setClientErrors([])
+      }
       const submitData: FormDataType & { regenScore: number } = {
         ...formData,
         regenScore: calculateRegenScore(),
@@ -280,7 +301,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       console.log("Producto enviado:", submitData)
 
       // Primero guardar el producto
-      const productResponse = await fetch('/api/vendor/products', {
+      const productResponse = await apiFetch('/api/vendor/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -298,14 +319,6 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
         })
       })
 
-      if (!productResponse.ok) {
-        const error = await productResponse.json()
-        console.error('Error al crear producto:', error)
-        const errorDetail = error.details ? `${error.error}: ${error.details}` : (error.error || 'Error desconocido')
-        alert('Error al crear el producto: ' + errorDetail)
-        return
-      }
-
       const productResult = await productResponse.json()
       const productId = productResult.data.id
       console.log('Producto creado:', productResult)
@@ -314,7 +327,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       // Luego solicitar evaluaciones de RegenMarks si existen
       if (formData.selectedRegenMarks.length > 0) {
         try {
-          const regenMarkResponse = await fetch('/api/regenmarks/request-evaluation', {
+          const regenMarkResponse = await apiFetch('/api/regenmarks/request-evaluation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -337,16 +350,9 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
               }
             })
           })
-
-          if (!regenMarkResponse.ok) {
-            const error = await regenMarkResponse.json()
-            console.error('Error en evaluación RegenMarks:', error)
-            alert('Advertencia: El producto se creó pero hubo un error al procesar las evaluaciones de RegenMarks. Revisa más tarde.')
-          } else {
-            const result = await regenMarkResponse.json()
-            console.log('RegenMarks solicitados:', result)
-            alert(`Se han solicitado ${result.requestedMarks.length} evaluación(es) de RegenMarks.`)
-          }
+          const result = await regenMarkResponse.json()
+          console.log('RegenMarks solicitados:', result)
+          alert(`Se han solicitado ${result.requestedMarks.length} evaluación(es) de RegenMarks.`)
         } catch (regenMarkError) {
           console.error('Error al solicitar RegenMarks:', regenMarkError)
           alert('Producto agregado, pero hubo error al procesar RegenMarks. Intenta más tarde.')
@@ -354,8 +360,23 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       }
 
       onBack()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al enviar producto:", error)
+      if (error?.body) {
+        try {
+          const parsed = JSON.parse(error.body)
+          if (parsed.code === 'VALIDATION_FAILED' && parsed.details) {
+            const flatErrors = Object.values(parsed.details)
+              .filter(Boolean)
+              .flat()
+              .map(e => String(e)) as string[]
+            setClientErrors(flatErrors)
+            return
+          }
+          alert(`Error al guardar el producto: ${parsed.error}${parsed.details ? ' - ' + JSON.stringify(parsed.details) : ''}`)
+          return
+        } catch {}
+      }
       alert("Error al guardar el producto. Intenta de nuevo.")
     }
   }
@@ -915,6 +936,16 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
           </CardHeader>
           <CardContent>{renderStepContent()}</CardContent>
         </Card>
+
+        {clientErrors.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {clientErrors.map((err, i) => (
+              <div key={i} className="text-sm text-red-600 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" /> {err}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between mt-8">
