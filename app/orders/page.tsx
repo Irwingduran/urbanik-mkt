@@ -101,7 +101,7 @@ const statusConfig = {
 }
 
 export default function OrdersPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,7 +112,13 @@ export default function OrdersPage() {
   const [totalOrders, setTotalOrders] = useState(0)
 
   useEffect(() => {
-    if (session) {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    if (session?.user) {
       fetchOrders()
     }
   }, [session, currentPage, statusFilter])
@@ -178,8 +184,15 @@ export default function OrdersPage() {
     return config?.label || status
   }
 
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    )
+  }
+
   if (!session) {
-    router.push('/auth/signin')
     return null
   }
 
