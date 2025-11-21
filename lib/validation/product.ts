@@ -12,22 +12,42 @@ export const CreateProductSchema = z.object({
   category: z.string().min(2, "Categoría requerida"),
   images: z.array(z.string()).optional(),
   stock: z.union([z.string(), z.number()]).transform(v => typeof v === 'string' ? parseInt(v) : v).refine(v => !Number.isNaN(v) && v >= 0, 'Stock inválido'),
-  minStock: z.union([z.string(), z.number()]).optional().transform(v => {
-    if (v === undefined || v === "") return 5;
-    return typeof v === 'string' ? parseInt(v) : v;
+  minStock: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    if (v === undefined || v === null || v === "") return 5;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed === "") return 5;
+      return parseInt(trimmed);
+    }
+    return v;
   }).refine(v => !Number.isNaN(v) && v >= 0, 'minStock inválido'),
   certifications: z.array(z.string()).optional(),
-  co2Reduction: z.union([z.string(), z.number()]).optional().transform(v => {
-    if (v === undefined || v === "") return 0;
-    return typeof v === 'string' ? parseFloat(v) : v;
+  co2Reduction: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    if (v === undefined || v === null || v === "") return 0;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed === "") return 0;
+      return parseFloat(trimmed);
+    }
+    return v;
   }).refine(v => !Number.isNaN(v), 'co2Reduction inválido'),
-  waterSaving: z.union([z.string(), z.number()]).optional().transform(v => {
-    if (v === undefined || v === "") return 0;
-    return typeof v === 'string' ? parseFloat(v) : v;
+  waterSaving: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    if (v === undefined || v === null || v === "") return 0;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed === "") return 0;
+      return parseFloat(trimmed);
+    }
+    return v;
   }).refine(v => !Number.isNaN(v), 'waterSaving inválido'),
-  energyEfficiency: z.union([z.string(), z.number()]).optional().transform(v => {
-    if (v === undefined || v === "") return 0;
-    return typeof v === 'string' ? parseFloat(v) : v;
+  energyEfficiency: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    if (v === undefined || v === null || v === "") return 0;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed === "") return 0;
+      return parseFloat(trimmed);
+    }
+    return v;
   }).refine(v => !Number.isNaN(v), 'energyEfficiency inválido'),
 })
 
