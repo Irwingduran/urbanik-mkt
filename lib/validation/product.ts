@@ -11,44 +11,31 @@ export const CreateProductSchema = z.object({
   sku: z.string().min(3, "SKU inválido"),
   category: z.string().min(2, "Categoría requerida"),
   images: z.array(z.string()).optional(),
-  stock: z.union([z.string(), z.number()]).transform(v => typeof v === 'string' ? parseInt(v) : v).refine(v => !Number.isNaN(v) && v >= 0, 'Stock inválido'),
-  minStock: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+  stock: z.union([z.string(), z.number()]).transform(v => {
+    const n = Number(v);
+    return Number.isNaN(n) || n < 0 ? 0 : Math.round(n);
+  }),
+  minStock: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional().transform(v => {
     if (v === undefined || v === null || v === "") return 5;
-    if (typeof v === 'string') {
-      const trimmed = v.trim();
-      if (trimmed === "") return 5;
-      return parseInt(trimmed);
-    }
-    return v;
-  }).refine(v => !Number.isNaN(v) && v >= 0, 'minStock inválido'),
+    const n = Number(v);
+    return Number.isNaN(n) || n < 0 ? 5 : Math.round(n);
+  }),
   certifications: z.array(z.string()).optional(),
-  co2Reduction: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+  co2Reduction: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional().transform(v => {
     if (v === undefined || v === null || v === "") return 0;
-    if (typeof v === 'string') {
-      const trimmed = v.trim();
-      if (trimmed === "") return 0;
-      return parseFloat(trimmed);
-    }
-    return v;
-  }).refine(v => !Number.isNaN(v), 'co2Reduction inválido'),
-  waterSaving: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+  }),
+  waterSaving: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional().transform(v => {
     if (v === undefined || v === null || v === "") return 0;
-    if (typeof v === 'string') {
-      const trimmed = v.trim();
-      if (trimmed === "") return 0;
-      return parseFloat(trimmed);
-    }
-    return v;
-  }).refine(v => !Number.isNaN(v), 'waterSaving inválido'),
-  energyEfficiency: z.union([z.string(), z.number(), z.null()]).optional().transform(v => {
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+  }),
+  energyEfficiency: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional().transform(v => {
     if (v === undefined || v === null || v === "") return 0;
-    if (typeof v === 'string') {
-      const trimmed = v.trim();
-      if (trimmed === "") return 0;
-      return parseFloat(trimmed);
-    }
-    return v;
-  }).refine(v => !Number.isNaN(v), 'energyEfficiency inválido'),
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+  }),
 })
 
 export type CreateProductInput = z.infer<typeof CreateProductSchema>
