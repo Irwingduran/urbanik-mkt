@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { ProductApprovalStatus } from "@prisma/client"
+import { computeProductRegenScore } from "@/lib/regenmark/services/product"
 
 // GET /api/vendor/products - List vendor's products
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || (session.user.role !== "VENDOR" && session.user.role !== "ADMIN")) {
+    if (!session || (!session.user.roles?.includes("VENDOR") && session.user.role !== "VENDOR" && session.user.role !== "ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || (session.user.role !== "VENDOR" && session.user.role !== "ADMIN")) {
+    if (!session || (!session.user.roles?.includes("VENDOR") && session.user.role !== "VENDOR" && session.user.role !== "ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -166,12 +168,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // PRODUCTION: Validate vendor profile exists and is allowed to create products
+    const vendorProfile = await prisma.vendorProfile.findUnique({
+      where: { userId: vendorUserId },
+      select: { userId: true, isBanned: true, active: true, suspended: true }
+    })
+
+    if (!vendorProfile) {
+      return NextResponse.json(
+        { error: "Vendor profile not found. Complete onboarding before creating products." },
+        { status: 400 }
+      )
+    }
+
+    if (vendorProfile.isBanned) {
+      return NextResponse.json(
+        { error: "Vendor is banned and cannot create products." },
+        { status: 403 }
+      )
+    }
+
+    if (vendorProfile.suspended || vendorProfile.active === false) {
+      return NextResponse.json(
+        { error: "Vendor account is not active. Resolve account status before creating products." },
+        { status: 403 }
+      )
+    }
+
     // Check if SKU is unique for this vendor
     const existingSku = await prisma.product.findFirst({
       where: {
         vendorUserId: vendorUserId,
         sku
-      }
+      },
+      select: { id: true }
     })
 
     if (existingSku) {
@@ -181,43 +211,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate regen score based on environmental metrics
-    const regenScore = Math.min(100, Math.round(
-      (co2Reduction || 0) * 0.4 +
-      (waterSaving || 0) * 0.3 +
-      (energyEfficiency || 0) * 0.3
-    ))
+    // (FK guard already satisfied by vendorProfile validation above)
 
-    const product = await prisma.product.create({
-      data: {
-        vendorUserId: vendorUserId,
-        name,
-        description,
-        price: parseFloat(price),
-        originalPrice: originalPrice ? parseFloat(originalPrice) : null,
-        sku,
-        category,
-        images: images || [],
-        stock: parseInt(stock) || 0,
-        minStock: parseInt(minStock) || 5,
-        inStock: parseInt(stock) > 0,
-        certifications: certifications || [],
-        co2Reduction: parseFloat(co2Reduction) || 0,
-        waterSaving: parseFloat(waterSaving) || 0,
-        energyEfficiency: parseFloat(energyEfficiency) || 0,
-        regenScore,
-        active: true
-      }
+    // Calculate regen score based on environmental metrics (centralized service)
+    const { score: regenScore } = computeProductRegenScore({
+      co2Reduction: parseFloat(co2Reduction) || 0,
+      waterSaving: parseFloat(waterSaving) || 0,
+      energyEfficiency: parseFloat(energyEfficiency) || 0,
     })
 
-    // Update vendor product count
-    await prisma.vendorProfile.update({
-      where: { userId: vendorUserId },
-      data: {
-        totalProducts: {
-          increment: 1
+    // Use a transaction to ensure consistency between product creation and counters
+    const product = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({
+        data: {
+          vendorUserId: vendorUserId,
+          name,
+          description,
+          price: parseFloat(price),
+          originalPrice: originalPrice ? parseFloat(originalPrice) : null,
+          sku,
+          category,
+          images: images || [],
+          stock: parseInt(stock) || 0,
+          minStock: parseInt(minStock) || 5,
+          inStock: parseInt(stock) > 0,
+          certifications: certifications || [],
+          co2Reduction: parseFloat(co2Reduction) || 0,
+          waterSaving: parseFloat(waterSaving) || 0,
+          energyEfficiency: parseFloat(energyEfficiency) || 0,
+          regenScore,
+          active: true,
+          approvalStatus: ProductApprovalStatus.PENDING
         }
-      }
+      })
+
+      await tx.vendorProfile.update({
+        where: { userId: vendorUserId },
+        data: { totalProducts: { increment: 1 } }
+      })
+
+      return created
     })
 
     return NextResponse.json({
@@ -228,8 +261,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Product creation error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     )
   }

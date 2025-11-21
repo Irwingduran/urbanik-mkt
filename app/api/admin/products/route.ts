@@ -18,15 +18,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const status = searchParams.get('status')
+    const approvalStatus = searchParams.get('approvalStatus') || 'PENDING' // PENDING, APPROVED, REJECTED
     const search = searchParams.get('search')
 
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
-    if (status && status !== 'all') {
-      where.status = status
+    const where: any = {
+      approvalStatus: approvalStatus
     }
     if (search) {
       where.OR = [
@@ -77,6 +76,103 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('[ADMIN_PRODUCTS]', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/admin/products - Approve or reject product
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { productId, approvalStatus, rejectionReason } = body
+
+    // Validation
+    if (!productId || !approvalStatus || !['APPROVED', 'REJECTED'].includes(approvalStatus)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request parameters' },
+        { status: 400 }
+      )
+    }
+
+    if (approvalStatus === 'REJECTED' && !rejectionReason) {
+      return NextResponse.json(
+        { success: false, error: 'Rejection reason is required' },
+        { status: 400 }
+      )
+    }
+
+    // Get product
+    const product = await prisma.product.findUnique({
+      where: { id: productId }
+    })
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    // Update product
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        approvalStatus: approvalStatus,
+        rejectionReason: approvalStatus === 'REJECTED' ? rejectionReason : null,
+        reviewedBy: session.user.id,
+        reviewedAt: new Date()
+      },
+      include: {
+        vendorProfile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // Create notification for vendor
+    await prisma.notification.create({
+      data: {
+        userId: product.vendorUserId,
+        type: approvalStatus === 'APPROVED' ? 'PRODUCT_APPROVED' : 'PRODUCT_REJECTED',
+        title: approvalStatus === 'APPROVED' ? 'Producto Aprobado ✅' : 'Producto Rechazado ❌',
+        message: approvalStatus === 'APPROVED'
+          ? `Tu producto "${product.name}" ha sido aprobado y está ahora visible en el marketplace.`
+          : `Tu producto "${product.name}" ha sido rechazado. Razón: ${rejectionReason}`,
+        productId: productId,
+        read: false
+      }
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: updatedProduct,
+        message: `Product ${approvalStatus === 'APPROVED' ? 'approved' : 'rejected'} successfully`
+      },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('[ADMIN_PRODUCTS_PATCH]', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

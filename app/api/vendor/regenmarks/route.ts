@@ -4,9 +4,14 @@ import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
 import { calculateRegenScore } from "@/lib/regenmark"
 import type { RegenMarkScoreData } from "@/lib/regenmark/scoring"
+import { createTracer } from "@/lib/trace"
 
 export async function GET(request: NextRequest) {
   try {
+    const requestId = request.headers.get("x-request-id") || undefined
+    const tracer = createTracer("api.vendor.regenmarks", { requestId })
+    const end = tracer.start("GET /api/vendor/regenmarks")
+
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
@@ -17,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user and vendor profile
-    const user = await prisma.user.findUnique({
+    const user = await tracer.span("fetchUserWithVendorProfile", async () => prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
         vendorProfile: {
@@ -45,7 +50,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-    })
+    }))
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -71,9 +76,9 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    const scoreResult = calculateRegenScore(regenMarksData)
+    const scoreResult = await tracer.span("calculateRegenScore", async () => calculateRegenScore(regenMarksData))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       regenScore: scoreResult.totalScore,
       nftLevel: vendorProfile.nftLevel || "VERDE_CLARO", // Default to VERDE_CLARO if null
       commission: Number(vendorProfile.commissionRate || 15), // Convert Decimal to number, default 15
@@ -97,10 +102,14 @@ export async function GET(request: NextRequest) {
       breakdown: scoreResult.breakdown,
       activeRegenMarksCount: scoreResult.activeRegenMarksCount,
     })
+    if (requestId) response.headers.set("x-request-id", requestId)
+    end({ activeMarks: scoreResult.activeRegenMarksCount, totalScore: scoreResult.totalScore })
+    return response
   } catch (error) {
     console.error("Error fetching vendor RegenMarks:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to fetch RegenMarks data" },
+      { error: "Failed to fetch RegenMarks data", details: errorMessage },
       { status: 500 }
     )
   }

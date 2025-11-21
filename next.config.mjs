@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    forceSwcTransforms: false,
+  },
   webpack: (config, { isServer }) => {
     // Exclude Node.js modules from client bundle
     if (!isServer) {

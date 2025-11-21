@@ -31,15 +31,54 @@ interface AddProductFormProps {
   onBack: () => void
 }
 
+type RegenMarkKey = "carbon_saver" | "water_guardian" | "human_first" | "humane_hero" | "circular_champion"
+
+interface FormDataType {
+  // Paso 1: Información Básica
+  name: string
+  sku: string
+  category: string
+  price: string
+  description: string
+  stock: string
+  minStock: string
+  images: File[]
+
+  // Paso 2: Impacto Ambiental
+  environmentalImpact: string
+  sustainabilityBenefits: string[]
+  carbonFootprint: string
+  waterFootprint: string
+  wasteGenerated: string
+
+  // Paso 3: Ciclo de Vida
+  rawMaterials: string
+  production: string
+  distribution: string
+  usage: string
+  disposal: string
+  recyclability: string
+  biodegradability: string
+
+  // Paso 4: Recursos y Eficiencia
+  waterConsumption: string
+  carbonEmissions: string
+  wasteGeneration: string
+  energyEfficiency: string
+  renewableEnergy: string
+
+  // RegenMarks (Paso 5)
+  selectedRegenMarks: string[]
+  regenMarkData: Record<RegenMarkKey, { notes: string; documentation: string }>
+  regenMarkEvaluations?: Array<{ type: string; notes: string; documentation: string }>
+}
+
 const steps = [
   { id: 1, title: "Información Básica", icon: CheckCircle },
   { id: 2, title: "Impacto Ambiental", icon: Leaf },
-  { id: 3, title: "Certificaciones", icon: Award },
-  { id: 4, title: "Ciclo de Vida", icon: Recycle },
-  { id: 5, title: "Recursos y Eficiencia", icon: Droplets },
-  { id: 6, title: "Prácticas Sociales", icon: Users },
-  { id: 7, title: "Bienestar Animal", icon: Heart },
-  { id: 8, title: "Revisión Final", icon: CheckCircle },
+  { id: 3, title: "Ciclo de Vida", icon: Recycle },
+  { id: 4, title: "Recursos y Eficiencia", icon: Droplets },
+  { id: 5, title: "Revisión Final", icon: CheckCircle },
 ]
 
 const certifications = [
@@ -71,7 +110,7 @@ const sustainabilityBenefits = [
 
 export default function AddProductForm({ onBack }: AddProductFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     // Paso 1: Información Básica
     name: "",
     sku: "",
@@ -89,11 +128,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     waterFootprint: "",
     wasteGenerated: "",
 
-    // Paso 3: Certificaciones
-    certifications: [] as string[],
-    certificationDocs: [],
-
-    // Paso 4: Ciclo de Vida
+    // Paso 3: Ciclo de Vida
     rawMaterials: "",
     production: "",
     distribution: "",
@@ -109,25 +144,19 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     energyEfficiency: "",
     renewableEnergy: "",
 
-    // Paso 6: Prácticas Sociales
-    employeeRelations: "",
-    communityImpact: "",
-    laborCompliance: "",
-    fairTrade: false,
-    localSourcing: "",
-
-    // Paso 7: Bienestar Animal
-    animalTesting: "",
-    animalProducts: "",
-    animalWelfare: "",
-    ethicalAlternatives: "",
+    // RegenMarks (Paso 5)
+    selectedRegenMarks: [] as string[],
+    regenMarkData: {
+      carbon_saver: { notes: "", documentation: "" },
+      water_guardian: { notes: "", documentation: "" },
+      human_first: { notes: "", documentation: "" },
+      humane_hero: { notes: "", documentation: "" },
+      circular_champion: { notes: "", documentation: "" },
+    },
   })
 
   const calculateRegenScore = () => {
     let score = 50 // Base score
-
-    // Certificaciones (max 20 puntos)
-    score += Math.min(formData.certifications.length * 3, 20)
 
     // Beneficios de sostenibilidad (max 15 puntos)
     score += Math.min(formData.sustainabilityBenefits.length * 2, 15)
@@ -141,18 +170,194 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     return Math.min(Math.round(score), 100)
   }
 
+  const detectRegenMarkEligibility = () => {
+    const regenScore = calculateRegenScore()
+    const minimumScore = 60
+    
+    if (regenScore < minimumScore) {
+      return { eligible: false, applicableMarks: [] }
+    }
+
+    const applicableMarks: Array<{ type: string; strength: string; reason: string }> = []
+
+    // CARBON_SAVER: Energía renovable > 50% OR emisiones < 2 kg CO₂
+    if (
+      (formData.renewableEnergy && Number.parseInt(formData.renewableEnergy) > 50) ||
+      (formData.carbonEmissions && Number.parseInt(formData.carbonEmissions) < 2) ||
+      formData.sustainabilityBenefits.includes("Energía renovable") ||
+      formData.sustainabilityBenefits.includes("Reducción de emisiones CO₂")
+    ) {
+      applicableMarks.push({
+        type: "CARBON_SAVER",
+        strength: formData.renewableEnergy && Number.parseInt(formData.renewableEnergy) > 50 ? "strong" : "moderate",
+        reason: "Tu producto tiene reducción significativa de carbono",
+      })
+    }
+
+    // WATER_GUARDIAN: Consumo de agua < 10 litros/unidad OR beneficio "Ahorro de agua"
+    if (
+      (formData.waterConsumption && Number.parseInt(formData.waterConsumption) < 10) ||
+      formData.sustainabilityBenefits.includes("Ahorro de agua")
+    ) {
+      applicableMarks.push({
+        type: "WATER_GUARDIAN",
+        strength: "strong",
+        reason: "Tu producto conserva agua significativamente",
+      })
+    }
+
+    // HUMAN_FIRST: Comercio justo OR producción local > 70%
+    if (
+      formData.sustainabilityBenefits.includes("Comercio justo") ||
+      formData.sustainabilityBenefits.includes("Producción local")
+    ) {
+      applicableMarks.push({
+        type: "HUMAN_FIRST",
+        strength: "strong",
+        reason: "Tu producto tiene compromiso con comunidades",
+      })
+    }
+
+    // HUMANE_HERO: Beneficios sin animales (biodegradable, materials reciclados)
+    if (
+      formData.sustainabilityBenefits.includes("Biodegradable") ||
+      formData.sustainabilityBenefits.includes("Materiales reciclados")
+    ) {
+      applicableMarks.push({
+        type: "HUMANE_HERO",
+        strength: "moderate",
+        reason: "Tu producto es ético y humano-first",
+      })
+    }
+
+    // CIRCULAR_CHAMPION: Reciclabilidad > 80% O Biodegradable
+    if (
+      (formData.recyclability && Number.parseInt(formData.recyclability) > 80) ||
+      formData.sustainabilityBenefits.includes("Biodegradable")
+    ) {
+      applicableMarks.push({
+        type: "CIRCULAR_CHAMPION",
+        strength: formData.recyclability && Number.parseInt(formData.recyclability) > 80 ? "strong" : "moderate",
+        reason: "Tu producto es completamente circular",
+      })
+    }
+
+    return {
+      eligible: applicableMarks.length > 0,
+      applicableMarks,
+    }
+  }
+
   const nextStep = () => {
-    if (currentStep < 8) setCurrentStep(currentStep + 1)
+    if (currentStep < 5) setCurrentStep(currentStep + 1)
   }
 
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
-  const handleSubmit = () => {
-    console.log("Producto enviado:", formData)
-    alert("¡Producto agregado exitosamente!")
-    onBack()
+  const handleSubmit = async () => {
+    try {
+      const submitData: FormDataType & { regenScore: number } = {
+        ...formData,
+        regenScore: calculateRegenScore(),
+      }
+
+      // Si hay RegenMarks seleccionados, preparar para envío
+      if (formData.selectedRegenMarks.length > 0) {
+        const regenMarkEvaluations = formData.selectedRegenMarks.map((mark) => {
+          const markKey = mark.toLowerCase() as keyof typeof formData.regenMarkData
+          const markData = formData.regenMarkData[markKey] || { notes: "", documentation: "" }
+          return {
+            type: mark,
+            notes: markData.notes || "",
+            documentation: markData.documentation || "",
+          }
+        })
+        submitData.regenMarkEvaluations = regenMarkEvaluations
+      }
+
+      console.log("Producto enviado:", submitData)
+
+      // Primero guardar el producto
+      const productResponse = await fetch('/api/vendor/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          price: formData.price,
+          sku: formData.sku,
+          category: formData.category,
+          stock: formData.stock,
+          minStock: formData.minStock,
+          co2Reduction: formData.carbonEmissions ? Number.parseFloat(formData.carbonEmissions) : 0,
+          waterSaving: formData.waterConsumption ? Number.parseFloat(formData.waterConsumption) : 0,
+          energyEfficiency: formData.energyEfficiency ? Number.parseFloat(formData.energyEfficiency) : 0,
+          sustainabilityBenefits: formData.sustainabilityBenefits
+        })
+      })
+
+      if (!productResponse.ok) {
+        const error = await productResponse.json()
+        console.error('Error al crear producto:', error)
+        const errorDetail = error.details ? `${error.error}: ${error.details}` : (error.error || 'Error desconocido')
+        alert('Error al crear el producto: ' + errorDetail)
+        return
+      }
+
+      const productResult = await productResponse.json()
+      const productId = productResult.data.id
+      console.log('Producto creado:', productResult)
+      alert(`¡Producto "${formData.name}" creado exitosamente!`)
+
+      // Luego solicitar evaluaciones de RegenMarks si existen
+      if (formData.selectedRegenMarks.length > 0) {
+        try {
+          const regenMarkResponse = await fetch('/api/regenmarks/request-evaluation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: productId,
+              selectedRegenMarks: formData.selectedRegenMarks.map(mark => ({
+                type: mark,
+                notes: formData.regenMarkData[mark.toLowerCase() as keyof typeof formData.regenMarkData]?.notes || '',
+                documentation: formData.regenMarkData[mark.toLowerCase() as keyof typeof formData.regenMarkData]?.documentation || ''
+              })),
+              regenScore: calculateRegenScore(),
+              productData: {
+                name: formData.name,
+                sku: formData.sku,
+                category: formData.category,
+                carbonEmissions: formData.carbonEmissions ? Number.parseFloat(formData.carbonEmissions) : undefined,
+                waterConsumption: formData.waterConsumption ? Number.parseFloat(formData.waterConsumption) : undefined,
+                renewableEnergy: formData.renewableEnergy ? Number.parseFloat(formData.renewableEnergy) : undefined,
+                recyclability: formData.recyclability ? Number.parseFloat(formData.recyclability) : undefined,
+                sustainabilityBenefits: formData.sustainabilityBenefits
+              }
+            })
+          })
+
+          if (!regenMarkResponse.ok) {
+            const error = await regenMarkResponse.json()
+            console.error('Error en evaluación RegenMarks:', error)
+            alert('Advertencia: El producto se creó pero hubo un error al procesar las evaluaciones de RegenMarks. Revisa más tarde.')
+          } else {
+            const result = await regenMarkResponse.json()
+            console.log('RegenMarks solicitados:', result)
+            alert(`Se han solicitado ${result.requestedMarks.length} evaluación(es) de RegenMarks.`)
+          }
+        } catch (regenMarkError) {
+          console.error('Error al solicitar RegenMarks:', regenMarkError)
+          alert('Producto agregado, pero hubo error al procesar RegenMarks. Intenta más tarde.')
+        }
+      }
+
+      onBack()
+    } catch (error) {
+      console.error("Error al enviar producto:", error)
+      alert("Error al guardar el producto. Intenta de nuevo.")
+    }
   }
 
   const renderStepContent = () => {
@@ -328,66 +533,6 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       case 3:
         return (
           <div className="space-y-6">
-            <div>
-              <Label>Certificaciones Ambientales</Label>
-              <div className="grid md:grid-cols-3 gap-4 mt-2">
-                {certifications.map((cert) => (
-                  <div key={cert} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={cert}
-                      checked={formData.certifications.includes(cert)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormData({
-                            ...formData,
-                            certifications: [...formData.certifications, cert],
-                          })
-                        } else {
-                          setFormData({
-                            ...formData,
-                            certifications: formData.certifications.filter((c) => c !== cert),
-                          })
-                        }
-                      }}
-                    />
-                    <Label htmlFor={cert} className="text-sm">
-                      {cert}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {formData.certifications.length > 0 && (
-              <div>
-                <Label>Certificaciones Seleccionadas</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.certifications.map((cert) => (
-                    <Badge key={cert} className="bg-green-100 text-green-800">
-                      <Award className="w-3 h-3 mr-1" />
-                      {cert}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label>Documentos de Certificación</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Sube los documentos que respalden tus certificaciones</p>
-                <Button variant="outline" size="sm" className="mt-2 bg-transparent">
-                  Seleccionar Archivos
-                </Button>
-              </div>
-            </div>
-          </div>
-        )
-
-      case 4:
-        return (
-          <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="rawMaterials">Extracción de Materias Primas</Label>
@@ -479,7 +624,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
           </div>
         )
 
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -545,141 +690,10 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
           </div>
         )
 
-      case 6:
-        return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="employeeRelations">Relación con Empleados</Label>
-              <Textarea
-                id="employeeRelations"
-                value={formData.employeeRelations}
-                onChange={(e) => setFormData({ ...formData, employeeRelations: e.target.value })}
-                placeholder="Describe las políticas laborales, beneficios y condiciones de trabajo..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="communityImpact">Impacto en Comunidades Locales</Label>
-              <Textarea
-                id="communityImpact"
-                value={formData.communityImpact}
-                onChange={(e) => setFormData({ ...formData, communityImpact: e.target.value })}
-                placeholder="Describe cómo tu empresa impacta positivamente en las comunidades..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="laborCompliance">Cumplimiento de Normativas Laborales</Label>
-              <Textarea
-                id="laborCompliance"
-                value={formData.laborCompliance}
-                onChange={(e) => setFormData({ ...formData, laborCompliance: e.target.value })}
-                placeholder="Describe el cumplimiento de normativas laborales y derechos humanos..."
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="fairTrade"
-                checked={formData.fairTrade}
-                onCheckedChange={(checked) => setFormData({ ...formData, fairTrade: checked as boolean })}
-              />
-              <Label htmlFor="fairTrade">Certificación de Comercio Justo</Label>
-            </div>
-
-            <div>
-              <Label htmlFor="localSourcing">Abastecimiento Local (%)</Label>
-              <Input
-                id="localSourcing"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.localSourcing}
-                onChange={(e) => setFormData({ ...formData, localSourcing: e.target.value })}
-                placeholder="60"
-              />
-            </div>
-          </div>
-        )
-
-      case 7:
-        return (
-          <div className="space-y-6">
-            <div>
-              <Label>Políticas sobre Pruebas en Animales</Label>
-              <RadioGroup
-                value={formData.animalTesting}
-                onValueChange={(value) => setFormData({ ...formData, animalTesting: value })}
-                className="mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no-testing" id="no-testing" />
-                  <Label htmlFor="no-testing">No realizamos pruebas en animales</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="limited-testing" id="limited-testing" />
-                  <Label htmlFor="limited-testing">Pruebas limitadas cuando es requerido por ley</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no-policy" id="no-policy" />
-                  <Label htmlFor="no-policy">No tenemos política específica</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <Label>Uso de Productos de Origen Animal</Label>
-              <RadioGroup
-                value={formData.animalProducts}
-                onValueChange={(value) => setFormData({ ...formData, animalProducts: value })}
-                className="mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no-animal-products" id="no-animal-products" />
-                  <Label htmlFor="no-animal-products">No utilizamos productos de origen animal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="ethical-sourcing" id="ethical-sourcing" />
-                  <Label htmlFor="ethical-sourcing">
-                    Utilizamos productos de origen animal con abastecimiento ético
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="conventional-sourcing" id="conventional-sourcing" />
-                  <Label htmlFor="conventional-sourcing">Utilizamos productos de origen animal convencionales</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <Label htmlFor="animalWelfare">Políticas de Bienestar Animal</Label>
-              <Textarea
-                id="animalWelfare"
-                value={formData.animalWelfare}
-                onChange={(e) => setFormData({ ...formData, animalWelfare: e.target.value })}
-                placeholder="Describe las políticas de bienestar animal de tu empresa..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="ethicalAlternatives">Alternativas Éticas</Label>
-              <Textarea
-                id="ethicalAlternatives"
-                value={formData.ethicalAlternatives}
-                onChange={(e) => setFormData({ ...formData, ethicalAlternatives: e.target.value })}
-                placeholder="Describe las alternativas éticas que utilizas en lugar de productos de origen animal..."
-                rows={3}
-              />
-            </div>
-          </div>
-        )
-
-      case 8:
+      case 5:
         const regenScore = calculateRegenScore()
+        const regenMarkEligibility = detectRegenMarkEligibility()
+        
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -734,9 +748,6 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p>
-                    <strong>Certificaciones:</strong> {formData.certifications.length}
-                  </p>
-                  <p>
                     <strong>Beneficios:</strong> {formData.sustainabilityBenefits.length}
                   </p>
                   <p>
@@ -749,20 +760,73 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
               </Card>
             </div>
 
-            {formData.certifications.length > 0 && (
-              <Card>
+            {/* RegenMarks Condicional */}
+            {regenMarkEligibility.eligible && (
+              <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">Certificaciones Seleccionadas</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-emerald-900">
+                    <Leaf className="w-6 h-6 text-emerald-600" />
+                    🌱 ¡Tu producto califica para RegenMarks!
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.certifications.map((cert) => (
-                      <Badge key={cert} className="bg-green-100 text-green-800">
-                        <Award className="w-3 h-3 mr-1" />
-                        {cert}
-                      </Badge>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-emerald-800">
+                    Tu producto cumple con los estándares para{" "}
+                    <strong>{regenMarkEligibility.applicableMarks.length} certificacione(s)</strong> de sostenibilidad.
+                    Esto puede mejorar tu visibilidad y beneficios comerciales.
+                  </p>
+
+                  <div className="space-y-3">
+                    {regenMarkEligibility.applicableMarks.map((mark) => (
+                      <div
+                        key={mark.type}
+                        className="flex items-start gap-3 p-3 bg-white rounded-lg border border-emerald-100"
+                      >
+                        <Checkbox
+                          checked={formData.selectedRegenMarks.includes(mark.type)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                selectedRegenMarks: [...formData.selectedRegenMarks, mark.type],
+                              })
+                            } else {
+                              setFormData({
+                                ...formData,
+                                selectedRegenMarks: formData.selectedRegenMarks.filter((m) => m !== mark.type),
+                              })
+                            }
+                          }}
+                          id={`regen-${mark.type}`}
+                        />
+                        <div className="flex-1">
+                          <label
+                            htmlFor={`regen-${mark.type}`}
+                            className="font-medium text-emerald-900 cursor-pointer block"
+                          >
+                            {mark.type === "CARBON_SAVER" && "♻️ Carbon Saver - Reduce Emisiones"}
+                            {mark.type === "WATER_GUARDIAN" && "💧 Water Guardian - Conserva Agua"}
+                            {mark.type === "HUMAN_FIRST" && "👥 Human First - Impacto Social"}
+                            {mark.type === "HUMANE_HERO" && "🤝 Humane Hero - Ética y Bienestar"}
+                            {mark.type === "CIRCULAR_CHAMPION" && "🔄 Circular Champion - Economía Circular"}
+                          </label>
+                          <p className="text-xs text-emerald-700 mt-1">{mark.reason}</p>
+                          <p className="text-xs text-emerald-600 mt-1">
+                            Confianza: {mark.strength === "strong" ? "🟢 Alto" : "🟡 Moderado"}
+                          </p>
+                        </div>
+                      </div>
                     ))}
                   </div>
+
+                  {formData.selectedRegenMarks.length > 0 && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <p className="text-sm text-emerald-800">
+                        <strong>Seleccionaste {formData.selectedRegenMarks.length} RegenMark(s)</strong> para
+                        evaluación. Se te contactará con los siguientes pasos.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -807,10 +871,10 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-gray-700">Paso {currentStep} de 8</span>
-            <span className="text-sm text-gray-500">{Math.round((currentStep / 8) * 100)}% completado</span>
+            <span className="text-sm font-medium text-gray-700">Paso {currentStep} de 5</span>
+            <span className="text-sm text-gray-500">{Math.round((currentStep / 5) * 100)}% completado</span>
           </div>
-          <Progress value={(currentStep / 8) * 100} className="h-2" />
+          <Progress value={(currentStep / 5) * 100} className="h-2" />
         </div>
 
         {/* Steps Navigation */}
@@ -859,7 +923,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
             Anterior
           </Button>
 
-          {currentStep === 8 ? (
+          {currentStep === 5 ? (
             <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="w-4 h-4 mr-2" />
               Publicar Producto

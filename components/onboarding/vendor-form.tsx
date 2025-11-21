@@ -22,6 +22,8 @@ import {
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
+import { submitVendorRegenMarks } from "@/lib/services/regenmarks"
+import { RegenMarkType } from "@prisma/client"
 
 interface VendorFormProps {
   onSubmit: (data: Record<string, unknown>) => void
@@ -272,6 +274,27 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
         const data = await response.json()
 
         if (response.ok) {
+          // Best-effort: submit initial vendor RegenMarks based on form signals (no guesses)
+          const marks: { type: RegenMarkType; metrics: Record<string, any> }[] = []
+
+          // If vendor declares Carbon Neutral certification -> Carbon Saver
+          if (formData.environmentalCertifications?.includes("Carbon Neutral")) {
+            marks.push({ type: "CARBON_SAVER", metrics: { carbonNeutral: true } })
+          }
+
+          // If vendor declares Energy Star (energy efficiency practices)
+          if (formData.environmentalCertifications?.includes("Energy Star")) {
+            marks.push({ type: "CARBON_SAVER", metrics: { sustainabilityReport: true } })
+          }
+
+          // Submit only if we have at least one explicit signal
+          if (marks.length > 0) {
+            try {
+              await submitVendorRegenMarks({ marks })
+            } catch (e) {
+              console.warn("RegenMarks submission skipped:", e)
+            }
+          }
           toast.success("Solicitud enviada. Estamos revisando tu aplicación.")
           onSubmit(data)
         } else {

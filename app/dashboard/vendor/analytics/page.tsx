@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { VendorDashboardLayout } from "@/components/shared/layout/VendorDashboardLayout"
 import {
   LineChart,
   Line,
@@ -23,7 +24,6 @@ import {
   Legend,
 } from "recharts"
 import { TrendingUp, TrendingDown, DollarSign, Package, Users, Leaf, Download } from "lucide-react"
-import VendorHeader from "@/components/dashboard/vendor-header"
 
 // Mock data para analíticas
 const analyticsData = {
@@ -103,10 +103,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <VendorHeader vendorData={vendorData} />
-
-      <div className="container mx-auto px-4 py-8">
+    <VendorDashboardLayout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Analíticas del Vendedor</h1>
@@ -568,6 +567,7 @@ export default function AnalyticsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </VendorDashboardLayout>
   )
 }

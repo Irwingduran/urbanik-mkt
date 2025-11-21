@@ -10,6 +10,12 @@ function hasAnyRole(userRoles: Role[] | undefined, allowedRoles: Role[]): boolea
 
 export default withAuth(
   function middleware(req) {
+    // Attach a request id for downstream correlation
+    const requestHeaders = new Headers(req.headers)
+    const existingId = requestHeaders.get("x-request-id")
+    const requestId = existingId || (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
+    requestHeaders.set("x-request-id", requestId)
+
     const token = req.nextauth.token
     const { pathname } = req.nextUrl
 
@@ -68,7 +74,8 @@ export default withAuth(
       }
     }
 
-    return NextResponse.next()
+    // Pass through modified headers
+    return NextResponse.next({ request: { headers: requestHeaders } })
   },
   {
     callbacks: {

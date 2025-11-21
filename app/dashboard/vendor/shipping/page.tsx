@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { VendorDashboardLayout } from "@/components/shared/layout/VendorDashboardLayout"
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,6 @@ import {
   Calendar,
   DollarSign,
 } from "lucide-react"
-import VendorHeader from "@/components/dashboard/vendor-header"
 
 // Mock data para envíos
 const shippingData = {
@@ -179,10 +179,9 @@ export default function ShippingPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <VendorHeader vendorData={vendorData} />
-
-      <div className="container mx-auto px-4 py-8">
+    <VendorDashboardLayout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Gestión de Envíos</h1>
@@ -516,5 +515,6 @@ export default function ShippingPage() {
         </Tabs>
       </div>
     </div>
+    </VendorDashboardLayout>
   )
 }

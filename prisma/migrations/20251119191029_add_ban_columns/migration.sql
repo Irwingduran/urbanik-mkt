@@ -7,11 +7,17 @@ CREATE TYPE "public"."FlagStatus" AS ENUM ('PENDING', 'REVIEWED', 'RESOLVED', 'D
 -- AlterTable
 ALTER TABLE "public"."reviews" ADD COLUMN     "isFlagged" BOOLEAN NOT NULL DEFAULT false;
 
--- AlterTable
-ALTER TABLE "public"."vendor_profiles" ADD COLUMN     "banReason" TEXT,
-ADD COLUMN     "bannedAt" TIMESTAMP(3),
-ADD COLUMN     "bannedBy" TEXT,
-ADD COLUMN     "isBanned" BOOLEAN NOT NULL DEFAULT false;
+-- AlterTable - Add ban fields to users table
+ALTER TABLE "public"."users" ADD COLUMN IF NOT EXISTS "isBanned" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "public"."users" ADD COLUMN IF NOT EXISTS "banReason" TEXT;
+ALTER TABLE "public"."users" ADD COLUMN IF NOT EXISTS "bannedAt" TIMESTAMP(3);
+ALTER TABLE "public"."users" ADD COLUMN IF NOT EXISTS "bannedBy" TEXT;
+
+-- AlterTable - Add ban fields to vendor_profiles table
+ALTER TABLE "public"."vendor_profiles" ADD COLUMN IF NOT EXISTS "banReason" TEXT,
+ADD COLUMN IF NOT EXISTS "bannedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "bannedBy" TEXT,
+ADD COLUMN IF NOT EXISTS "isBanned" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
 CREATE TABLE "public"."content_flags" (

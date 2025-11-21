@@ -34,7 +34,7 @@ export function useSessionRefresh() {
  * Útil después de que el admin aprueba una solicitud de vendedor
  */
 export function useRoleChangeListener() {
-  const { session, update } = useSession()
+  const { data: session, update } = useSession()
 
   const waitForRoleChange = useCallback(async (targetRole: string, maxWaitTime = 30000) => {
     const startTime = Date.now()

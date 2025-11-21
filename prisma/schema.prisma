@@ -93,43 +93,47 @@ model Vendor {
 }
 
 model Product {
-  id               String         @id @default(cuid())
+  id               String                   @id @default(cuid())
   name             String
   description      String
   price            Float
   originalPrice    Float?
-  sku              String         @unique
+  sku              String                   @unique
   category         String
   subcategory      String?
   images           String[]
-  stock            Int            @default(0)
-  minStock         Int            @default(5)
-  maxOrderQuantity Int            @default(10)
-  inStock          Boolean        @default(true)
-  regenScore       Int            @default(0)
+  stock            Int                      @default(0)
+  minStock         Int                      @default(5)
+  maxOrderQuantity Int                      @default(10)
+  inStock          Boolean                  @default(true)
+  regenScore       Int                      @default(0)
   certifications   String[]
-  co2Reduction     Float          @default(0)
-  waterSaving      Float          @default(0)
-  energyEfficiency Float          @default(0)
+  co2Reduction     Float                    @default(0)
+  waterSaving      Float                    @default(0)
+  energyEfficiency Float                    @default(0)
   dimensions       Json?
-  materials        String[]       @default([])
+  materials        String[]                 @default([])
   origin           String?
-  nfts             Json[]         @default([])
-  featured         Boolean        @default(false)
-  active           Boolean        @default(true)
-  views            Int            @default(0)
-  salesCount       Int            @default(0)
-  averageRating    Float          @default(0)
-  reviewCount      Int            @default(0)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  nfts             Json[]                   @default([])
+  featured         Boolean                  @default(false)
+  active           Boolean                  @default(true)
+  approvalStatus   ProductApprovalStatus    @default(PENDING)
+  rejectionReason  String?
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  views            Int                      @default(0)
+  salesCount       Int                      @default(0)
+  averageRating    Float                    @default(0)
+  reviewCount      Int                      @default(0)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
   vendorUserId     String
   cartItems        CartItem[]
   notifications    Notification[]
   orderItems       OrderItem[]
-  vendorProfile    VendorProfile  @relation(fields: [vendorUserId], references: [userId], onDelete: Cascade)
+  vendorProfile    VendorProfile            @relation(fields: [vendorUserId], references: [userId], onDelete: Cascade)
   reviews          Review[]
-  wishlistItems    WishlistItem[]
+  wishlistItem     WishlistItem[]
 
   @@index([vendorUserId])
   @@map("products")
@@ -599,6 +603,12 @@ enum Role {
   CUSTOMER
 }
 
+enum ProductApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum OnboardingStatus {
   PENDING
   IN_PROGRESS
@@ -655,6 +665,8 @@ enum NotificationType {
   VENDOR_APPROVED
   VENDOR_REJECTED
   VENDOR_IN_REVIEW
+  PRODUCT_APPROVED
+  PRODUCT_REJECTED
   REGENMARK_SUBMITTED
   REGENMARK_APPROVED
   REGENMARK_REJECTED

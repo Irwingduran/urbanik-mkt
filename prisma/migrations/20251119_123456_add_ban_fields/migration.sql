@@ -1,5 +1,0 @@
--- Add ban-related fields to users table
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "isBanned" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "banReason" TEXT;
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "bannedAt" TIMESTAMP(3);
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "banExpiresAt" TIMESTAMP(3);

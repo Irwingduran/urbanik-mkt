@@ -32,7 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import VendorHeader from '@/components/dashboard/vendor-header'
+import { VendorDashboardLayout } from '@/components/shared/layout/VendorDashboardLayout'
 
 interface Order {
   id: string
@@ -129,7 +129,7 @@ export default function VendorOrdersPage() {
   const [cancelReason, setCancelReason] = useState('')
 
   useEffect(() => {
-    if (session?.user.role === 'VENDOR') {
+    if (session?.user.roles?.includes('VENDOR') || session?.user.role === 'VENDOR') {
       fetchOrders()
     } else if (session?.user.role) {
       router.push('/dashboard')
@@ -260,22 +260,14 @@ export default function VendorOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <VendorHeader vendorData={{
-        name: session?.user?.name || "Vendor",
-        contactName: session?.user?.name || "Vendor",
-        email: session?.user?.email || "vendor@example.com",
-        memberSince: "2024",
-        regenScore: 85,
-        nftLevel: "Verde"
-      }} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Pedidos</h1>
-          <p className="text-gray-600">Administra y da seguimiento a todos tus pedidos</p>
-        </div>
+    <VendorDashboardLayout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Pedidos</h1>
+            <p className="text-gray-600">Administra y da seguimiento a todos tus pedidos</p>
+          </div>
 
         {/* Summary Cards */}
         {summary && (
@@ -673,7 +665,8 @@ export default function VendorOrdersPage() {
             )}
           </>
         )}
+        </div>
       </div>
-    </div>
+    </VendorDashboardLayout>
   )
 }

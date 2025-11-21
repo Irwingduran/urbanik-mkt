@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { apiFetch } from "@/lib/api-client"
 import {
   Award,
   Plus,
@@ -62,6 +63,7 @@ export default function VendorRegenMarksPage() {
   const [vendorData, setVendorData] = useState<VendorData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [requestId, setRequestId] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -77,27 +79,32 @@ export default function VendorRegenMarksPage() {
   const fetchVendorData = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/vendor/regenmarks")
-
-      if (!response.ok) {
-        const errorData = await response.json()
-
-        // Specific error handling
-        if (response.status === 404 && errorData.error === "Vendor profile not found") {
-          setError("No tienes un perfil de vendedor. Por favor completa el proceso de onboarding primero.")
-        } else if (response.status === 401) {
-          setError("No estás autenticado. Por favor inicia sesión.")
-        } else {
-          setError(errorData.error || "Error al cargar los datos de RegenMarks")
-        }
-        return
-      }
-
+      const response = await apiFetch("/api/vendor/regenmarks")
+      const rid = response.headers.get("x-request-id") || response.headers.get("x-client-request-id")
+      if (rid) setRequestId(rid)
       const data = await response.json()
       setVendorData(data)
     } catch (err) {
-      console.error("Error fetching vendor data:", err)
-      setError(err instanceof Error ? err.message : "Error desconocido al conectar con el servidor")
+      const e = err as any
+      console.error("Error fetching vendor data:", e)
+      // Try to parse body if available
+      if (typeof e?.body === "string" && e.body.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(e.body)
+          if (e.status === 404 && parsed.error === "Vendor profile not found") {
+            setError("No tienes un perfil de vendedor. Por favor completa el proceso de onboarding primero.")
+          } else if (e.status === 401) {
+            setError("No estás autenticado. Por favor inicia sesión.")
+          } else {
+            const detailedError = parsed.details ? `${parsed.error}: ${parsed.details}` : parsed.error
+            setError(detailedError || "Error al cargar los datos de RegenMarks")
+          }
+        } catch {
+          setError(e?.message || "Error desconocido al conectar con el servidor")
+        }
+      } else {
+        setError(e?.message || "Error desconocido al conectar con el servidor")
+      }
     } finally {
       setLoading(false)
     }
@@ -209,6 +216,9 @@ export default function VendorRegenMarksPage() {
         }
       />
       <div className="p-6 space-y-6">
+      {process.env.NODE_ENV !== "production" && requestId && (
+        <div className="text-xs text-gray-500">Request ID: {requestId}</div>
+      )}
 
       {/* Current Status Card */}
       <Card className="border-green-200 bg-gradient-to-br from-green-50 to-blue-50">
