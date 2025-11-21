@@ -1,3 +1,11 @@
 -- AlterTable
-ALTER TABLE "public"."reviews" ADD COLUMN     "vendorReply" TEXT,
-ADD COLUMN     "vendorReplyAt" TIMESTAMP(3);
+ALTER TABLE "public"."reviews" 
+ADD COLUMN IF NOT EXISTS "vendorReply" TEXT,
+ADD COLUMN IF NOT EXISTS "vendorReplyAt" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "public"."vendor_profiles" 
+ADD COLUMN IF NOT EXISTS "isBanned" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "banReason" TEXT,
+ADD COLUMN IF NOT EXISTS "bannedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "bannedBy" TEXT;
