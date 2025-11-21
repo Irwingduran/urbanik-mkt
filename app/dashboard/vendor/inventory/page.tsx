@@ -1,96 +1,87 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package, Plus, AlertTriangle, TrendingUp, Leaf, RefreshCw } from "lucide-react"
+import { Package, Plus, AlertTriangle, TrendingUp, Leaf, RefreshCw, Loader2 } from "lucide-react"
 import { VendorDashboardLayout, VendorDashboardHeader } from "@/components/shared/layout/VendorDashboardLayout"
 import ProductStock from "@/components/inventory/product-stock"
 import AddProductForm from "@/components/inventory/add-product-form"
+import { apiFetch } from "@/lib/api-client"
 
-// Mock data para el inventario
-const inventoryData = {
-  summary: {
-    totalProducts: 24,
-    totalStock: 1247,
-    lowStockAlerts: 3,
-    avgRegenScore: 82,
-  },
-  products: [
-    {
-      id: 1,
-      name: "Panel Solar Eficiente 400W",
-      sku: "PS-400W-001",
-      category: "Energía Solar",
-      stock: 45,
-      minStock: 10,
-      price: 299.99,
-      regenScore: 95,
-      status: "active",
-      image: "/placeholder.svg?height=60&width=60",
-      lastUpdated: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Batería Litio Reciclada 100Ah",
-      sku: "BL-100AH-002",
-      category: "Almacenamiento",
-      stock: 8,
-      minStock: 15,
-      price: 899.99,
-      regenScore: 88,
-      status: "low_stock",
-      image: "/placeholder.svg?height=60&width=60",
-      lastUpdated: "2024-01-14",
-    },
-    {
-      id: 3,
-      name: "Inversor Inteligente 5kW",
-      sku: "INV-5KW-003",
-      category: "Inversores",
-      stock: 0,
-      minStock: 5,
-      price: 1299.99,
-      regenScore: 78,
-      status: "out_of_stock",
-      image: "/placeholder.svg?height=60&width=60",
-      lastUpdated: "2024-01-13",
-    },
-    {
-      id: 4,
-      name: "Cargador Vehículo Eléctrico",
-      sku: "CVE-22KW-004",
-      category: "Movilidad",
-      stock: 22,
-      minStock: 8,
-      price: 1899.99,
-      regenScore: 91,
-      status: "active",
-      image: "/placeholder.svg?height=60&width=60",
-      lastUpdated: "2024-01-15",
-    },
-  ],
-  categories: [
-    { name: "Energía Solar", count: 8, avgScore: 92 },
-    { name: "Almacenamiento", count: 6, avgScore: 85 },
-    { name: "Inversores", count: 4, avgScore: 79 },
-    { name: "Movilidad", count: 6, avgScore: 88 },
-  ],
+interface Product {
+  id: string
+  name: string
+  sku: string
+  category: string
+  stock: number
+  minStock: number
+  price: number
+  regenScore: number
+  status: string
+  images: string[]
+  updatedAt: string
+  _count?: {
+    orderItems: number
+  }
 }
 
-const vendorData = {
-  name: "EcoTech Solutions",
-  contactName: "Juan Pérez",
-  email: "juan@ecotech.com",
-  memberSince: "2024-01-15",
-  regenScore: 78,
-  nftLevel: "Hoja Creciente",
+interface InventorySummary {
+  totalProducts: number
+  totalStock: number
+  lowStockAlerts: number
+  avgRegenScore: number
 }
 
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showAddProduct, setShowAddProduct] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState<InventorySummary>({
+    totalProducts: 0,
+    totalStock: 0,
+    lowStockAlerts: 0,
+    avgRegenScore: 0,
+  })
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await apiFetch("/api/vendor/products?limit=100")
+      const data = await response.json()
+      
+      if (data.success) {
+        const fetchedProducts = data.data
+        setProducts(fetchedProducts)
+        
+        // Calculate summary
+        const totalStock = fetchedProducts.reduce((acc: number, p: Product) => acc + p.stock, 0)
+        const lowStockAlerts = fetchedProducts.filter((p: Product) => p.stock <= p.minStock).length
+        const avgRegenScore = fetchedProducts.length > 0 
+          ? Math.round(fetchedProducts.reduce((acc: number, p: Product) => acc + p.regenScore, 0) / fetchedProducts.length)
+          : 0
+
+        setSummary({
+          totalProducts: fetchedProducts.length,
+          totalStock,
+          lowStockAlerts,
+          avgRegenScore
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching inventory:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showAddProduct) {
+      fetchProducts()
+    }
+  }, [showAddProduct, fetchProducts])
 
   if (showAddProduct) {
     return (
@@ -106,6 +97,16 @@ export default function InventoryPage() {
         />
         <div className="p-6">
           <AddProductForm onBack={() => setShowAddProduct(false)} />
+        </div>
+      </VendorDashboardLayout>
+    )
+  }
+
+  if (loading && products.length === 0) {
+    return (
+      <VendorDashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
         </div>
       </VendorDashboardLayout>
     )
@@ -145,7 +146,7 @@ export default function InventoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Total Productos</p>
-                      <p className="text-2xl font-bold text-gray-900">{inventoryData.summary.totalProducts}</p>
+                      <p className="text-2xl font-bold text-gray-900">{summary.totalProducts}</p>
                     </div>
                     <Package className="w-8 h-8 text-blue-600" />
                   </div>
@@ -157,7 +158,7 @@ export default function InventoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Stock Total</p>
-                      <p className="text-2xl font-bold text-gray-900">{inventoryData.summary.totalStock}</p>
+                      <p className="text-2xl font-bold text-gray-900">{summary.totalStock}</p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-green-600" />
                   </div>
@@ -169,7 +170,7 @@ export default function InventoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Alertas Stock</p>
-                      <p className="text-2xl font-bold text-red-600">{inventoryData.summary.lowStockAlerts}</p>
+                      <p className="text-2xl font-bold text-red-600">{summary.lowStockAlerts}</p>
                     </div>
                     <AlertTriangle className="w-8 h-8 text-red-600" />
                   </div>
@@ -181,34 +182,13 @@ export default function InventoryPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">REGEN Score Promedio</p>
-                      <p className="text-2xl font-bold text-green-600">{inventoryData.summary.avgRegenScore}</p>
+                      <p className="text-2xl font-bold text-green-600">{summary.avgRegenScore}</p>
                     </div>
                     <Leaf className="w-8 h-8 text-green-600" />
                   </div>
                 </CardContent>
               </Card>
             </div>
-
-            {/* Categorías */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Rendimiento por Categoría</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {inventoryData.categories.map((category, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                      <h3 className="font-medium text-gray-900">{category.name}</h3>
-                      <p className="text-sm text-gray-600">{category.count} productos</p>
-                      <div className="flex items-center mt-2">
-                        <Leaf className="w-4 h-4 text-green-600 mr-1" />
-                        <span className="text-sm font-medium text-green-600">Score: {category.avgScore}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Alertas de Stock */}
             <Card>
@@ -220,8 +200,9 @@ export default function InventoryPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {inventoryData.products
+                  {products
                     .filter((product) => product.stock <= product.minStock)
+                    .slice(0, 5)
                     .map((product) => (
                       <div
                         key={product.id}
@@ -229,7 +210,7 @@ export default function InventoryPage() {
                       >
                         <div className="flex items-center space-x-3">
                           <img
-                            src={product.image || "/placeholder.svg"}
+                            src={product.images?.[0] || "/placeholder.svg"}
                             alt={product.name}
                             className="w-10 h-10 rounded-lg object-cover"
                           />
@@ -246,13 +227,20 @@ export default function InventoryPage() {
                         </Button>
                       </div>
                     ))}
+                    {products.filter((p) => p.stock <= p.minStock).length === 0 && (
+                      <p className="text-center text-gray-500 py-4">No hay alertas de stock bajo.</p>
+                    )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="products">
-            <ProductStock products={inventoryData.products} />
+            <ProductStock products={products.map(p => ({
+              ...p,
+              image: p.images?.[0] || "/placeholder.svg",
+              lastUpdated: new Date(p.updatedAt).toLocaleDateString()
+            }))} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

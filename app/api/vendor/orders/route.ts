@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
             type: "ORDER_SHIPPED",
             title: "Pedido Enviado",
             message: `Tu pedido ha sido enviado. Número de seguimiento: ${data.trackingNumber}`,
-            actionUrl: `/orders/${order.id}`
+            actionUrl: `/dashboard/user/orders/${order.id}`
           }
         })
         break
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
             type: "ORDER_UPDATED",
             title: "Pedido en Proceso",
             message: "Tu pedido está siendo procesado",
-            actionUrl: `/orders/${order.id}`
+            actionUrl: `/dashboard/user/orders/${order.id}`
           }
         })
         break
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
             type: "ORDER_CANCELLED",
             title: "Pedido Cancelado",
             message: data.reason || "Tu pedido ha sido cancelado",
-            actionUrl: `/orders/${order.id}`
+            actionUrl: `/dashboard/user/orders/${order.id}`
           }
         })
         break

@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
       monthlyOrderCount,
       lowStockProducts,
       recentOrders,
-      topProducts
+      topProducts,
+      reviewStats
     ] = await Promise.all([
       // Total products
       prisma.product.count({
@@ -146,6 +147,17 @@ export async function GET(request: NextRequest) {
             }
           }
         }
+      }),
+
+      // Review stats
+      prisma.review.aggregate({
+        where: {
+          product: {
+            vendorUserId: vendorId
+          }
+        },
+        _avg: { rating: true },
+        _count: { rating: true }
       })
     ])
 
@@ -168,7 +180,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        vendorInfo,
+        vendorInfo: {
+          ...vendorInfo,
+          rating: reviewStats._avg.rating || 0,
+          reviewCount: reviewStats._count.rating || 0
+        },
         stats: {
           totalProducts,
           activeProducts,

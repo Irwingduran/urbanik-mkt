@@ -5,6 +5,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  console.log('Fetching product with ID:', params.id); // Add logging
   try {
     const product = await prisma.product.findUnique({
       where: {
@@ -92,13 +93,15 @@ export async function GET(
         name: product.vendorProfile.user.name,
         email: product.vendorProfile.user.email
       },
-      reviews: product.reviews.map((review: typeof product.reviews[0]) => ({
+      reviews: product.reviews.map((review: any) => ({
         id: review.id,
         rating: review.rating,
         comment: review.comment,
         verified: review.verified,
         helpful: review.helpful,
         createdAt: review.createdAt,
+        vendorReply: review.vendorReply,
+        vendorReplyAt: review.vendorReplyAt,
         user: {
           name: review.user.name
         }

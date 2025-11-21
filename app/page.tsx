@@ -114,8 +114,8 @@ export default function Homepage() {
   const transformProduct = (product: any): Product => ({
     id: product.id,
     name: product.name,
-    vendor: product.vendor?.companyName || product.vendor?.name || 'Vendor',
-    location: product.vendor?.location || 'México',
+    vendor: product.vendorProfile?.companyName || product.vendorProfile?.name || 'Vendor',
+    location: product.vendorProfile?.location || 'México',
     price: product.price,
     originalPrice: product.originalPrice,
     rating: product.averageRating,

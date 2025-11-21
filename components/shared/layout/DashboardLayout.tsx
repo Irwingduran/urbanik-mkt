@@ -102,7 +102,7 @@ const navigationItems: NavItem[] = [
   },
   {
     label: 'Ordenes',
-    href: '/dashboard/orders',
+    href: '/dashboard/user/orders',
     icon: ShoppingCart,
     roles: [UserRole.USER],
     ariaLabel: 'Ver mis ordenes'

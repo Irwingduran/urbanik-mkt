@@ -125,7 +125,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "USER") {
+    const userRoles = session?.user?.roles || (session?.user?.role ? [session.user.role] : [])
+    const hasPermission = userRoles.some((r: string) => ['USER', 'CUSTOMER', 'ADMIN'].includes(r))
+
+    if (!session || !hasPermission) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -220,7 +223,7 @@ export async function POST(request: NextRequest) {
             shipping,
             total,
             shippingAddress,
-            paymentMethod,
+            paymentMethod: typeof paymentMethod === 'object' ? paymentMethod.type : String(paymentMethod),
             paymentStatus: "PENDING",
             items: {
               create: (vendorItems as any[]).map((item: any) => ({
@@ -266,6 +269,49 @@ export async function POST(request: NextRequest) {
             totalOrders: { increment: 1 }
           }
         })
+
+        // Create notification for Vendor (New Order)
+        await prisma.notification.create({
+          data: {
+            userId: vendorId,
+            type: "ORDER_CREATED",
+            title: "¡Nueva Orden Recibida!",
+            message: `Has recibido una nueva orden #${order.id.slice(-8)} por $${total.toFixed(2)}`,
+            orderId: order.id,
+            actionUrl: `/dashboard/vendor/orders`
+          }
+        })
+
+        // Create notification for User (Order Confirmation)
+        await prisma.notification.create({
+          data: {
+            userId: session.user.id,
+            type: "ORDER_CREATED",
+            title: "Orden Confirmada",
+            message: `Tu orden #${order.id.slice(-8)} ha sido confirmada exitosamente.`,
+            orderId: order.id,
+            actionUrl: `/dashboard/user/orders/${order.id}`
+          }
+        })
+
+        // Check for Low Stock and notify Vendor
+        await Promise.all(
+          (vendorItems as any[]).map(async (item: any) => {
+            const currentStock = item.product.stock - item.quantity
+            if (currentStock <= 5 && currentStock > 0) {
+               await prisma.notification.create({
+                data: {
+                  userId: vendorId,
+                  type: "STOCK_LOW",
+                  title: "Alerta de Stock Bajo",
+                  message: `El producto "${item.product.name}" tiene pocas unidades (${currentStock} restantes).`,
+                  productId: item.productId,
+                  actionUrl: `/dashboard/vendor/products/${item.productId}`
+                }
+              })
+            }
+          })
+        )
 
         return order
       })

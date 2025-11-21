@@ -1,6 +1,8 @@
 import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
-import { Role } from "@prisma/client"
+
+// Define Role type locally to avoid importing from @prisma/client in middleware
+type Role = "USER" | "VENDOR" | "ADMIN" | "CUSTOMER"
 
 // Helper function to check if user has any of the allowed roles
 function hasAnyRole(userRoles: Role[] | undefined, allowedRoles: Role[]): boolean {

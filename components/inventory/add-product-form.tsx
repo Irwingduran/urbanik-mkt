@@ -25,6 +25,7 @@ import {
   Heart,
   CheckCircle,
   AlertCircle,
+  X,
 } from "lucide-react"
 import { apiFetch } from "@/lib/api-client"
 
@@ -156,6 +157,45 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     },
   })
 
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages = Array.from(e.target.files)
+      setFormData({ ...formData, images: [...formData.images, ...newImages] })
+    }
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = [...formData.images]
+    newImages.splice(index, 1)
+    setFormData({ ...formData, images: newImages })
+  }
+
+  const uploadImages = async () => {
+    if (selectedImages.length === 0) return []
+
+    const uploadPromises = selectedImages.map(async (file) => {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error uploading ${file.name}`)
+      }
+
+      const data = await response.json()
+      return data.url
+    })
+
+    return Promise.all(uploadPromises)
+  }
+
   const calculateRegenScore = () => {
     let score = 50 // Base score
 
@@ -279,8 +319,25 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       } else {
         setClientErrors([])
       }
-      const submitData: FormDataType & { regenScore: number } = {
+
+      setIsUploading(true)
+      
+      // Upload images first
+      let imageUrls: string[] = []
+      if (selectedImages.length > 0) {
+        try {
+          imageUrls = await uploadImages()
+        } catch (uploadError) {
+          console.error("Error uploading images:", uploadError)
+          alert("Error al subir las imágenes. Por favor intenta de nuevo.")
+          setIsUploading(false)
+          return
+        }
+      }
+
+      const submitData: Omit<FormDataType, 'images'> & { images: string[], regenScore: number } = {
         ...formData,
+        images: imageUrls,
         regenScore: calculateRegenScore(),
       }
 
@@ -312,6 +369,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
           category: formData.category,
           stock: formData.stock,
           minStock: formData.minStock,
+          images: imageUrls,
           co2Reduction: formData.carbonEmissions ? Number.parseFloat(formData.carbonEmissions) : 0,
           waterSaving: formData.waterConsumption ? Number.parseFloat(formData.waterConsumption) : 0,
           energyEfficiency: formData.energyEfficiency ? Number.parseFloat(formData.energyEfficiency) : 0,
@@ -320,6 +378,11 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       })
 
       const productResult = await productResponse.json()
+      
+      if (!productResponse.ok) {
+        throw new Error(productResult.error || "Error al crear el producto")
+      }
+
       const productId = productResult.data.id
       console.log('Producto creado:', productResult)
       alert(`¡Producto "${formData.name}" creado exitosamente!`)
@@ -359,25 +422,12 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
         }
       }
 
+      setIsUploading(false)
       onBack()
     } catch (error: any) {
       console.error("Error al enviar producto:", error)
-      if (error?.body) {
-        try {
-          const parsed = JSON.parse(error.body)
-          if (parsed.code === 'VALIDATION_FAILED' && parsed.details) {
-            const flatErrors = Object.values(parsed.details)
-              .filter(Boolean)
-              .flat()
-              .map(e => String(e)) as string[]
-            setClientErrors(flatErrors)
-            return
-          }
-          alert(`Error al guardar el producto: ${parsed.error}${parsed.details ? ' - ' + JSON.stringify(parsed.details) : ''}`)
-          return
-        } catch {}
-      }
-      alert("Error al guardar el producto. Intenta de nuevo.")
+      setIsUploading(false)
+      alert(`Error: ${error.message || "No se pudo crear el producto"}`)
     }
   }
 
@@ -446,6 +496,16 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
                   placeholder="50"
                 />
               </div>
+              <div>
+                <Label htmlFor="minStock">Stock Mínimo (Alerta)</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                  placeholder="5"
+                />
+              </div>
             </div>
 
             <div>
@@ -462,12 +522,44 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
             <div>
               <Label>Imágenes del Producto</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Arrastra y suelta imágenes aquí o haz clic para seleccionar</p>
-                <Button variant="outline" className="mt-4 bg-transparent">
-                  Seleccionar Archivos
-                </Button>
+                <input
+                  type="file"
+                  id="images"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+                <label htmlFor="images" className="cursor-pointer block">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Arrastra y suelta imágenes aquí o haz clic para seleccionar</p>
+                  <Button type="button" variant="outline" className="mt-4 bg-transparent pointer-events-none">
+                    Seleccionar Archivos
+                  </Button>
+                </label>
               </div>
+              
+              {/* Image Previews */}
+              {selectedImages.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  {selectedImages.map((file, index) => (
+                    <div key={index} className="relative group border rounded-lg overflow-hidden aspect-square">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )
@@ -955,9 +1047,18 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
           </Button>
 
           {currentStep === 5 ? (
-            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Publicar Producto
+            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700" disabled={isUploading}>
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Publicando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Publicar Producto
+                </>
+              )}
             </Button>
           ) : (
             <Button onClick={nextStep} className="bg-green-600 hover:bg-green-700">

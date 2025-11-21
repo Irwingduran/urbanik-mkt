@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, Filter, MoreHorizontal, Edit, Eye, RefreshCw, Leaf } from "lucide-react"
 
 interface Product {
-  id: number
+  id: string | number
   name: string
   sku: string
   category: string

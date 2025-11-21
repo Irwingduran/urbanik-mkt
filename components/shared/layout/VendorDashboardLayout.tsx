@@ -22,7 +22,8 @@ import {
   Info,
   Menu,
   Plus,
-  TrendingUp
+  TrendingUp,
+  Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -71,6 +72,7 @@ const vendorNavigationItems: NavItem[] = [
   { label: 'Panel de Control', href: '/dashboard/vendor', icon: LayoutDashboard, ariaLabel: 'Ir al panel de control' },
   { label: 'Inventario', href: '/dashboard/vendor/inventory', icon: Package, ariaLabel: 'Gestionar inventario' },
   { label: 'Pedidos', href: '/dashboard/vendor/orders', icon: ShoppingCart, ariaLabel: 'Ver pedidos' },
+  { label: 'Reseñas', href: '/dashboard/vendor/reviews', icon: Star, ariaLabel: 'Ver reseñas' },
   { label: 'RegenMarks', href: '/dashboard/vendor/regenmarks', icon: Leaf, ariaLabel: 'Mis certificaciones de sostenibilidad' },
   { label: 'Clientes', href: '/dashboard/vendor/customers', icon: Users, ariaLabel: 'Ver clientes' },
   { label: 'Analíticas', href: '/dashboard/vendor/analytics', icon: BarChart3, ariaLabel: 'Ver analíticas' },

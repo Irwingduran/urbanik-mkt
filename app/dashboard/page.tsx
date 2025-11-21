@@ -191,7 +191,7 @@ export default function UserDashboardPage() {
                     <Package className="w-5 h-5 text-blue-600" />
                     <span>Órdenes Recientes</span>
                   </div>
-                  <Link href="/dashboard/orders">
+                  <Link href="/dashboard/user/orders">
                     <Button variant="outline" size="sm">Ver Todas</Button>
                   </Link>
                 </CardTitle>
@@ -305,7 +305,7 @@ export default function UserDashboardPage() {
                   <span className="text-sm">Explorar Productos</span>
                 </Button>
               </Link>
-              <Link href="/dashboard/orders">
+              <Link href="/dashboard/user/orders">
                 <Button variant="outline" className="w-full h-16 flex flex-col items-center space-y-2">
                   <Package className="w-6 h-6" />
                   <span className="text-sm">Mis Órdenes</span>

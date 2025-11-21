@@ -22,6 +22,8 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addItem, updateQuantity, selectCartItemByProductId } from "@/lib/store/slices/cartSlice"
 
+import Link from "next/link"
+
 interface Product {
   id: string
   name: string
@@ -115,22 +117,17 @@ export function ProductCard({ product, viewMode }: ProductCardProps) {
               )}
             </div>
 
-            {/* Product Info */}
-            <div className="flex-1 space-y-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.name}</h3>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {product.vendor} • {product.location}
-                  </span>
-                  <span className="flex items-center">
-                    <Star className="w-4 h-4 mr-1 text-yellow-500" />
-                    {product.rating} ({product.reviews})
-                  </span>
-                </div>
-              </div>
-
+        {/* Product Info */}
+        <div className="mb-3">
+          <Link href={`/marketplace/products/${product.id}`}>
+            <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-green-700 transition-colors cursor-pointer">
+              {product.name}
+            </h3>
+          </Link>
+          <div className="flex items-center text-sm text-gray-600 mb-2">
+            <MapPin className="w-3 h-3 mr-1" />
+            {product.location}
+          </div>
               {/* REGEN Score */}
               <div className="flex items-center space-x-3">
                 <div className="flex-1">
@@ -284,11 +281,13 @@ export function ProductCard({ product, viewMode }: ProductCardProps) {
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="relative">
-        <img
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        <Link href={`/marketplace/products/${product.id}`}>
+          <img
+            src={product.image || "/placeholder.svg"}
+            alt={product.name}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+          />
+        </Link>
 
         {/* Overlay badges */}
         <div className="absolute top-3 left-3 space-y-2">
@@ -331,7 +330,11 @@ export function ProductCard({ product, viewMode }: ProductCardProps) {
       <CardContent className="p-4 space-y-3">
         {/* Product Info */}
         <div>
-          <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
+          <Link href={`/marketplace/products/${product.id}`}>
+            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-green-600 transition-colors cursor-pointer">
+              {product.name}
+            </h3>
+          </Link>
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span className="flex items-center">
               <MapPin className="w-3 h-3 mr-1" />

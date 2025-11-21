@@ -98,8 +98,8 @@ export default function Marketplace() {
           const transformedProducts: Product[] = data.data.map((product: any) => ({
             id: product.id,
             name: product.name,
-            vendor: product.vendor.companyName || product.vendor.name,
-            location: product.vendor.location || 'México',
+            vendor: product.vendorProfile?.companyName || product.vendorProfile?.name || 'Vendor',
+            location: product.vendorProfile?.location || 'México',
             price: product.price,
             originalPrice: product.originalPrice,
             rating: product.averageRating,
