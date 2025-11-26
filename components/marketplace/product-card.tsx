@@ -18,6 +18,7 @@ import {
   Eye,
   Plus,
   Minus,
+  Leaf,
 } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addItem, updateQuantity, selectCartItemByProductId } from "@/lib/store/slices/cartSlice"
@@ -51,6 +52,7 @@ interface Product {
     energyEfficiency: number
   }
   certifications: string[]
+  materials?: string[]
   description: string
   stock: number
   maxOrderQuantity: number
@@ -193,6 +195,13 @@ export function ProductCard({ product, viewMode }: ProductCardProps) {
                   <Award className="w-4 h-4 text-yellow-600" />
                   <span className="text-sm text-gray-600">{product.certifications.length} certificaciones</span>
                 </div>
+
+                {product.materials && product.materials.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <Leaf className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-gray-600">{product.materials.length} materiales</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -388,6 +397,13 @@ export function ProductCard({ product, viewMode }: ProductCardProps) {
             <Award className="w-3 h-3 text-yellow-600" />
             <span className="text-xs text-gray-600">{product.certifications.length}</span>
           </div>
+
+          {product.materials && product.materials.length > 0 && (
+            <div className="flex items-center space-x-1">
+              <Leaf className="w-3 h-3 text-green-600" />
+              <span className="text-xs text-gray-600">{product.materials.length}</span>
+            </div>
+          )}
         </div>
 
         {/* Environmental Metrics */}

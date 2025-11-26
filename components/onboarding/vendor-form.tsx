@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
@@ -18,7 +17,6 @@ import {
   Award,
   Leaf,
   Info,
-  Sparkles,
   Mail,
   Phone,
   Globe,
@@ -46,7 +44,7 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
     defaultValues: {
       companyName: "",
       contactName: "",
-      businessType: "" as any, // ✅ Corregido: string vacío compatible con enum
+      businessType: "" as unknown as VendorOnboardingValues['businessType'], // ✅ Corregido: string vacío compatible con enum
       description: "",
       email: "",
       phone: "",
@@ -63,8 +61,8 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
       laborCompliance: "",
       fairTradeCertified: false,
       localSourcingPercent: "", // ✅ Corregido: string en lugar de undefined
-      animalTestingPolicy: "" as any, // ✅ Corregido
-      animalOriginUse: "" as any, // ✅ Corregido
+      animalTestingPolicy: "" as unknown as VendorOnboardingValues['animalTestingPolicy'], // ✅ Corregido
+      animalOriginUse: "" as unknown as VendorOnboardingValues['animalOriginUse'], // ✅ Corregido
       animalWelfarePolicies: "",
       ethicalAlternatives: "",
     },
@@ -91,7 +89,7 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
       ? [...currentArray, value]
       : currentArray.filter(item => item !== value)
     
-    setValue(field, updatedArray as any, { shouldValidate: true })
+    setValue(field, updatedArray as unknown as VendorOnboardingValues[keyof VendorOnboardingValues], { shouldValidate: true })
   }
 
   // ✅ Helper para verificar si un checkbox está checked
@@ -254,7 +252,7 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
     }
 
     // Handle RegenMarks logic
-    const marks: { type: RegenMarkType; metrics: Record<string, any> }[] = [];
+    const marks: { type: RegenMarkType; metrics: Record<string, unknown> }[] = [];
     if (data.environmentalCertifications?.includes("Carbon Neutral")) {
       marks.push({ type: "CARBON_SAVER", metrics: { carbonNeutral: true } });
     }
@@ -277,9 +275,10 @@ export default function VendorForm({ onSubmit }: VendorFormProps) {
     // ✅ Llama a la función onSubmit prop
     onSubmit(result);
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error en el envío:", error);
-    toast.error(error.message || "Error al procesar la solicitud");
+    const message = error instanceof Error ? error.message : "Error al procesar la solicitud";
+    toast.error(message);
   } finally {
     setIsSubmitting(false);
   }

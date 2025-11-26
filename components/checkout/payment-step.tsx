@@ -11,7 +11,6 @@ import {
   Building,
   Globe
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -64,7 +63,6 @@ const PAYMENT_METHODS = [
 
 export function PaymentStep({ checkoutData, updateCheckoutData, totals }: PaymentStepProps) {
   const [cardErrors, setCardErrors] = useState<Record<string, string>>({})
-  const [isProcessing, setIsProcessing] = useState(false)
 
   const updatePaymentMethod = (field: keyof PaymentMethod, value: string) => {
     updateCheckoutData({

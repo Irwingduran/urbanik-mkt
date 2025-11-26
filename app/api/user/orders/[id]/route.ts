@@ -63,17 +63,17 @@ export async function GET(
     }
 
     // Calculate environmental impact
-    const environmentalImpact = order.items.reduce((acc: {co2Saved: number, waterSaved: number, energyGenerated: number}, item: any) => {
+    const environmentalImpact = order.items.reduce((acc: {co2Saved: number, waterSaved: number, energyGenerated: number}, item) => {
       const product = item.product
       return {
-        co2Saved: acc.co2Saved + (product.co2Reduction * item.quantity),
-        waterSaved: acc.waterSaved + (product.waterSaving * item.quantity),
-        energyGenerated: acc.energyGenerated + (product.energyEfficiency * item.quantity)
+        co2Saved: acc.co2Saved + ((product.co2Reduction || 0) * item.quantity),
+        waterSaved: acc.waterSaved + ((product.waterSaving || 0) * item.quantity),
+        energyGenerated: acc.energyGenerated + ((product.energyEfficiency || 0) * item.quantity)
       }
     }, { co2Saved: 0, waterSaved: 0, energyGenerated: 0 })
 
     // Check for existing reviews
-    const productIds = order.items.map((item: any) => item.productId)
+    const productIds = order.items.map((item) => item.productId)
     const reviews = await prisma.review.findMany({
       where: {
         userId: userId,
@@ -81,16 +81,16 @@ export async function GET(
       },
       select: { productId: true, rating: true }
     })
-    const reviewMap = new Map(reviews.map((r: any) => [r.productId, r.rating]))
+    const reviewMap = new Map(reviews.map((r) => [r.productId, r.rating]))
 
     const orderWithImpact = {
       ...order,
-      items: order.items.map((item: any) => ({
+      items: order.items.map((item) => ({
         ...item,
         userRating: reviewMap.get(item.productId) || null
       })),
       environmentalImpact,
-      totalRegenScore: order.items.reduce((sum: number, item: any) =>
+      totalRegenScore: order.items.reduce((sum: number, item) =>
         sum + (item.product.regenScore * item.quantity), 0
       )
     }
@@ -124,7 +124,7 @@ export async function PATCH(
     const orderId = params.id
     const userId = session.user.id
     const body = await request.json()
-    const { action, reason } = body
+    const { action } = body
 
     if (action !== 'cancel') {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })

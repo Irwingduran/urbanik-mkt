@@ -129,15 +129,6 @@ const shippingData = {
   ],
 }
 
-const vendorData = {
-  name: "EcoTech Solutions",
-  contactName: "Juan Pérez",
-  email: "juan@ecotech.com",
-  memberSince: "2024-01-15",
-  regenScore: 78,
-  nftLevel: "Hoja Creciente",
-}
-
 export default function ShippingPage() {
   const [activeTab, setActiveTab] = useState("shipments")
   const [searchTerm, setSearchTerm] = useState("")

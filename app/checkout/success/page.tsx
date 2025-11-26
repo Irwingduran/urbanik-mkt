@@ -8,14 +8,12 @@ import {
   Package,
   Mail,
   Calendar,
-  MapPin,
   Truck,
   Download,
   Share2,
   ArrowRight,
   Leaf,
   Gift,
-  Star,
   Smartphone
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

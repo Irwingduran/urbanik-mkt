@@ -6,7 +6,7 @@ import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolk
 // Base query with authentication
 const baseQuery = fetchBaseQuery({
   baseUrl: '/api',
-  prepareHeaders: (headers, { getState }) => {
+  prepareHeaders: (headers) => {
     // You can add auth token here if needed
     // const token = (getState() as RootState).auth.token
     // if (token) {
@@ -22,7 +22,7 @@ const baseQueryWithRetry: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  let result = await baseQuery(args, api, extraOptions)
+  const result = await baseQuery(args, api, extraOptions)
 
   if (result.error && result.error.status === 401) {
     // Handle authentication errors

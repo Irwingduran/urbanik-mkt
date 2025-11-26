@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Star,
@@ -17,8 +15,6 @@ import {
   Share2,
   MessageSquare,
   TreePine,
-  Droplets,
-  Zap,
   ArrowLeft,
   CheckCircle,
   Truck,
@@ -30,6 +26,18 @@ import Header from "@/components/layout/header"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addItem, updateQuantity, selectCartItemByProductId } from "@/lib/store/slices/cartSlice"
 import Link from "next/link"
+
+interface Review {
+  id: string
+  rating: number
+  comment: string
+  createdAt: string
+  verified: boolean
+  user: {
+    name: string
+    image?: string
+  }
+}
 
 interface ProductDetail {
   id: string
@@ -47,10 +55,10 @@ interface ProductDetail {
   co2Reduction: number
   waterSaving: number
   energyEfficiency: number
-  dimensions?: any
+  dimensions?: Record<string, unknown>
   materials?: string[]
   origin?: string
-  nfts: any[]
+  nfts: unknown[]
   featured: boolean
   averageRating: number
   reviewCount: number
@@ -67,13 +75,12 @@ interface ProductDetail {
     email: string
     location?: string
   }
-  reviews: any[]
+  reviews: Review[]
 }
 
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
   const dispatch = useAppDispatch()
   
   const [product, setProduct] = useState<ProductDetail | null>(null)
@@ -105,20 +112,6 @@ export default function ProductDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleAddToCart = () => {
-    if (!product) return
-    
-    dispatch(addItem({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0] || "/placeholder.svg",
-      vendorId: product.vendorProfile.companyName, // Using company name as ID for now to match existing logic
-      vendorName: product.vendorProfile.companyName,
-      maxStock: Math.min(product.stock, product.maxOrderQuantity)
-    }))
   }
 
   const handleUpdateCartQuantity = (newQuantity: number) => {
@@ -499,19 +492,7 @@ export default function ProductDetailPage() {
                         </div>
                       </div>
                       <p className="text-gray-600">{review.comment}</p>
-                      {review.vendorReply && (
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-100 ml-8">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm text-gray-900">Respuesta del Vendedor</span>
-                            {review.vendorReplyAt && (
-                              <span className="text-xs text-gray-500">
-                                • {new Date(review.vendorReplyAt).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-700">{review.vendorReply}</p>
-                        </div>
-                      )}
+                      {/* Vendor reply removed as it is not in the schema */}
                     </div>
                   ))}
                 </div>

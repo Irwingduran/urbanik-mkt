@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DashboardLayout, DashboardHeader } from "@/components/shared/layout/DashboardLayout"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -13,15 +12,12 @@ import {
   Truck,
   MapPin,
   CreditCard,
-  Calendar,
   Leaf,
   Droplets,
   Zap,
-  AlertCircle,
   XCircle,
   CheckCircle,
   Clock,
-  RefreshCw,
   Star
 } from "lucide-react"
 import {

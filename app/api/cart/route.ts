@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
       total: item.product.price * item.quantity
     }))
 
-    const cartTotal = transformedCartItems.reduce((sum: number, item: any) => sum + item.total, 0)
-    const cartCount = transformedCartItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
+    const cartTotal = transformedCartItems.reduce((sum: number, item: { total: number }) => sum + item.total, 0)
+    const cartCount = transformedCartItems.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)
 
     return NextResponse.json({
       success: true,

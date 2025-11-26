@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -15,7 +15,6 @@ import {
   Truck,
   Gift,
   AlertCircle,
-  Star,
   Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -84,6 +83,7 @@ export default function CartPage() {
   }
 
   const handleCheckout = () => {
+    setIsLoading(true)
     router.push('/checkout')
   }
 

@@ -1,7 +1,7 @@
 import { RegenMarkType } from "@prisma/client"
 
 export type SubmitVendorRegenMarksInput = {
-  marks: { type: RegenMarkType; metrics: Record<string, any> }[]
+  marks: { type: RegenMarkType; metrics: Record<string, unknown> }[]
   vendorId?: string // admin override
 }
 

@@ -18,8 +18,6 @@ import {
   BarChart3,
   RefreshCw,
   ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
 } from 'lucide-react'
 
 interface Analytics {
@@ -70,6 +68,7 @@ export default function AdminAnalyticsPage() {
     if (status === 'authenticated') {
       fetchAnalytics()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router, selectedPeriod])
 
   const fetchAnalytics = async () => {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { Prisma, NotificationType } from '@prisma/client'
 
 // GET /api/orders/[id] - Get specific order details
 export async function GET(
@@ -114,7 +115,7 @@ export async function PATCH(
 
     const orderId = params.id
     const body = await request.json()
-    const { status, trackingNumber, estimatedDelivery, notes } = body
+    const { status, trackingNumber, estimatedDelivery } = body
 
     // Get the order first to check permissions
     const order = await prisma.order.findUnique({
@@ -155,7 +156,7 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: Prisma.OrderUpdateInput = {}
 
     if (status) updateData.status = status
     if (trackingNumber) updateData.trackingNumber = trackingNumber
@@ -216,7 +217,7 @@ export async function PATCH(
         data: {
           userId: order.userId,
           orderId: order.id,
-          type: notificationTypes[status] as any,
+          type: notificationTypes[status] as NotificationType,
           title: 'Actualización de Pedido',
           message: notificationMessages[status],
           actionUrl: `/orders/${order.id}`

@@ -81,12 +81,14 @@ export default function AdminOrdersPage() {
     if (status === 'authenticated') {
       fetchOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user.role === 'ADMIN') {
       fetchOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterStatus])
 
   const fetchOrders = async () => {

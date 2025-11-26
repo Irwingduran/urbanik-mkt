@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import {
@@ -10,14 +9,11 @@ import {
   Users,
   Shield,
   ArrowRight,
-  CheckCircle,
   X,
   Zap,
   Target,
   Award,
-  Leaf,
-  Clock,
-  Check
+  Leaf
 } from 'lucide-react'
 
 const features = [

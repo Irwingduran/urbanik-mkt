@@ -15,8 +15,6 @@ import {
   ArrowLeft,
   Leaf,
   RotateCcw,
-  Calendar,
-  MapPin,
   CreditCard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

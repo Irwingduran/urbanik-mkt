@@ -9,8 +9,6 @@ import {
   Package,
   DollarSign,
   ShoppingCart,
-  TrendingUp,
-  Plus,
   BarChart3,
   Users,
   Star,

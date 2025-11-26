@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
+import { createNotification } from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
+import { Prisma, OrderStatus } from '@prisma/client'
 
 // GET /api/vendor/orders - Get vendor's orders
 export async function GET(request: NextRequest) {
@@ -24,10 +26,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { vendorUserId: vendorUserId }
+    const where: Prisma.OrderWhereInput = { vendorUserId: vendorUserId }
 
     if (status) {
-      where.status = status
+      where.status = status as OrderStatus
     }
 
     // Add time range filter
@@ -55,7 +57,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Build order by clause
-    const orderBy: any = {}
+    const orderBy: Prisma.OrderOrderByWithRelationInput = {}
+    // @ts-expect-error - Dynamic key access
     orderBy[sortBy] = sortOrder
 
     const [orders, totalCount, statusCounts] = await Promise.all([
@@ -124,8 +127,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const pendingOrders = statusCounts.find((s: any) => s.status === "PENDING")?._count?.status || 0
-    const processingOrders = statusCounts.find((s: any) => s.status === "PROCESSING")?._count?.status || 0
+    const pendingOrders = statusCounts.find((s) => s.status === "PENDING")?._count?.status || 0
+    const processingOrders = statusCounts.find((s) => s.status === "PROCESSING")?._count?.status || 0
 
     const totalPages = Math.ceil(totalCount / limit)
 
@@ -145,7 +148,7 @@ export async function GET(request: NextRequest) {
         monthlyRevenue: monthlyRevenue._sum.total || 0,
         pendingOrders,
         processingOrders,
-        statusCounts: statusCounts.reduce((acc: Record<string, number>, item: any) => {
+        statusCounts: statusCounts.reduce((acc: Record<string, number>, item) => {
           acc[item.status] = item._count.status
           return acc
         }, {} as Record<string, number>)
@@ -199,15 +202,16 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Create notification
-        await prisma.notification.create({
-          data: {
-            userId: order.userId,
-            orderId: order.id,
-            type: "ORDER_SHIPPED",
-            title: "Pedido Enviado",
-            message: `Tu pedido ha sido enviado. Número de seguimiento: ${data.trackingNumber}`,
-            actionUrl: `/dashboard/user/orders/${order.id}`
+                // Create notification
+        await createNotification({
+          userId: order.userId,
+          orderId: order.id,
+          type: "ORDER_SHIPPED",
+          title: "Pedido Enviado",
+          message: `Tu pedido ha sido enviado. Número de seguimiento: ${data.trackingNumber}`,
+          actionUrl: `/dashboard/user/orders/${order.id}`,
+          metadata: {
+            trackingNumber: data.trackingNumber
           }
         })
         break
@@ -222,15 +226,13 @@ export async function POST(request: NextRequest) {
         })
 
         // Create notification
-        await prisma.notification.create({
-          data: {
-            userId: order.userId,
-            orderId: order.id,
-            type: "ORDER_UPDATED",
-            title: "Pedido en Proceso",
-            message: "Tu pedido está siendo procesado",
-            actionUrl: `/dashboard/user/orders/${order.id}`
-          }
+        await createNotification({
+          userId: order.userId,
+          orderId: order.id,
+          type: "ORDER_UPDATED",
+          title: "Pedido en Proceso",
+          message: "Tu pedido está siendo procesado",
+          actionUrl: `/dashboard/user/orders/${order.id}`
         })
         break
 
@@ -256,7 +258,7 @@ export async function POST(request: NextRequest) {
         })
 
         await Promise.all(
-          orderItems.map((item: any) =>
+          orderItems.map((item) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -268,15 +270,13 @@ export async function POST(request: NextRequest) {
         )
 
         // Create notification
-        await prisma.notification.create({
-          data: {
-            userId: order.userId,
-            orderId: order.id,
-            type: "ORDER_CANCELLED",
-            title: "Pedido Cancelado",
-            message: data.reason || "Tu pedido ha sido cancelado",
-            actionUrl: `/dashboard/user/orders/${order.id}`
-          }
+        await createNotification({
+          userId: order.userId,
+          orderId: order.id,
+          type: "ORDER_CANCELLED",
+          title: "Pedido Cancelado",
+          message: data.reason || "Tu pedido ha sido cancelado",
+          actionUrl: `/dashboard/user/orders/${order.id}`
         })
         break
 

@@ -463,7 +463,7 @@ async function main() {
   console.log('✅ Products created')
 
   // Create a sample order
-  const sampleOrder = await prisma.order.create({
+  await prisma.order.create({
     data: {
       userId: customerUser.id,
       vendorUserId: vendorRecord.userId,

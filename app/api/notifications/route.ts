@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from '@prisma/client'
 
 // GET /api/notifications - Get user's notifications
 export async function GET(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { userId: session.user.id }
+    const where: Prisma.NotificationWhereInput = { userId: session.user.id }
 
     if (unreadOnly) {
       where.read = false

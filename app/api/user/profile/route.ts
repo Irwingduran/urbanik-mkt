@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       notifyMarketing: notifyMarketing ?? false,
       regenScore: user.profile?.regenScore || 0,
       loyaltyPoints: user.profile?.loyaltyPoints || 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       nftsCollected: (user.profile?.nftsCollected || []) as any[]
     }
 

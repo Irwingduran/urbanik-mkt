@@ -93,15 +93,13 @@ export async function GET(
         name: product.vendorProfile.user.name,
         email: product.vendorProfile.user.email
       },
-      reviews: product.reviews.map((review: any) => ({
+      reviews: product.reviews.map((review) => ({
         id: review.id,
         rating: review.rating,
         comment: review.comment,
         verified: review.verified,
         helpful: review.helpful,
         createdAt: review.createdAt,
-        vendorReply: review.vendorReply,
-        vendorReplyAt: review.vendorReplyAt,
         user: {
           name: review.user.name
         }

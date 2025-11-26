@@ -96,7 +96,6 @@ export default function OnboardingPage() {
   }, [vendorStatus, hasVendorRole, isLoadingVendorStatus, router])
 
   const currentStepId = steps[currentStep].id
-  const progress = ((currentStep + 1) / steps.length) * 100
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
@@ -304,7 +303,7 @@ export default function OnboardingPage() {
 
                 {/* Completion Step */}
                 {currentStepId === "completion" && (
-                  <Completion userType={userType} formData={formData} />
+                  <Completion formData={formData} />
                 )}
               </div>
             </div>

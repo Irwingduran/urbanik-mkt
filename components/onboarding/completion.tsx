@@ -6,12 +6,10 @@ import { CheckCircle, Clock, Shield, FileCheck, Users, ArrowRight, Home } from "
 import Link from "next/link"
 
 interface CompletionProps {
-  userType: "vendor" | "user" | null
   formData: Record<string, unknown>
 }
 
-export default function Completion({ userType, formData }: CompletionProps) {
-  const isVendor = userType === "vendor"
+export default function Completion({ formData }: CompletionProps) {
   const userName = (formData.contactName as string) || (formData.companyName as string) || "Usuario"
 
   return (

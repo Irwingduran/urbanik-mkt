@@ -1,14 +1,22 @@
 // Reusable API hook with loading states and error handling
-// @ts-nocheck
 
 import { useState, useCallback } from 'react'
 import { ApiResponse, ApiError, LoadingState } from '../types/api.types'
 import { handleApiError } from '../services/apiClient'
 
+interface PaginationMeta {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
 export interface UseApiOptions<T> {
   onSuccess?: (data: T) => void
   onError?: (error: string) => void
-  transform?: (data: any) => T
+  transform?: (data: unknown) => T
 }
 
 export function useApi<T>() {
@@ -93,14 +101,7 @@ export function usePaginatedApi<T>() {
   const [state, setState] = useState<
     LoadingState & {
       data: T[]
-      meta?: {
-        total: number
-        page: number
-        limit: number
-        totalPages: number
-        hasNext: boolean
-        hasPrev: boolean
-      }
+      meta?: PaginationMeta
     }
   >({
     isLoading: false,
@@ -112,7 +113,7 @@ export function usePaginatedApi<T>() {
 
   const execute = useCallback(
     async <R>(
-      apiCall: () => Promise<ApiResponse<{ data: R[]; meta: any }>>,
+      apiCall: () => Promise<ApiResponse<{ data: R[]; meta: PaginationMeta }>>,
       options?: UseApiOptions<R[]> & { append?: boolean }
     ) => {
       setState(prev => ({

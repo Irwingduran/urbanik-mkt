@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { RegenMarkType } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     const existingEvaluation = await prisma.regenMarkEvaluation.findFirst({
       where: {
         vendorProfileId: user.vendorProfile.id,
-        type: type as any,
+        type: type as RegenMarkType,
         status: {
           in: ["PENDING", "SUBMITTED", "IN_REVIEW", "AI_PROCESSING"],
         },
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process each document
-    for (const [key, value] of documentEntries) {
+    for (const [, value] of documentEntries) {
       if (value instanceof File) {
         const file = value as File
         const bytes = await file.arrayBuffer()
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     const evaluation = await prisma.regenMarkEvaluation.create({
       data: {
         vendorProfileId: user.vendorProfile.id,
-        type: type as any,
+        type: type as RegenMarkType,
         status: "SUBMITTED", // Skip payment for now
         stage: "SUBMITTED",
         submittedAt: new Date(),

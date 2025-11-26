@@ -12,6 +12,7 @@ import { X, MapPin, Award, Tag, DollarSign, Leaf } from "lucide-react"
 interface Filters {
   locations: string[]
   certifications: string[]
+  materials: string[]
   priceRange: number[]
   minRegenScore: number
   inStockOnly: boolean
@@ -43,6 +44,19 @@ const availableCertifications = [
   "Carbon Neutral",
 ]
 
+const availableMaterials = [
+  "Bambú",
+  "Algodón Orgánico",
+  "Plástico Reciclado",
+  "Madera Certificada FSC",
+  "Vidrio Reciclado",
+  "Cáñamo",
+  "Lino",
+  "Corcho",
+  "Metal Reciclado",
+  "Bioplásticos"
+]
+
 const availableCategories = [
   "Energía Solar",
   "Gestión de Agua",
@@ -60,7 +74,7 @@ export function MarketplaceFilters({ filters, setFilters }: MarketplaceFiltersPr
     })
   }
 
-  const toggleArrayFilter = (key: "locations" | "certifications" | "categories", value: string) => {
+  const toggleArrayFilter = (key: "locations" | "certifications" | "categories" | "materials", value: string) => {
     const currentArray = filters[key]
     const newArray = currentArray.includes(value)
       ? currentArray.filter((item) => item !== value)
@@ -74,6 +88,7 @@ export function MarketplaceFilters({ filters, setFilters }: MarketplaceFiltersPr
       case "locations":
       case "certifications":
       case "categories":
+      case "materials":
         updateFilter(key, [])
         break
       case "priceRange":
@@ -163,6 +178,49 @@ export function MarketplaceFilters({ filters, setFilters }: MarketplaceFiltersPr
                   />
                   <label htmlFor={`cert-${cert}`} className="text-sm cursor-pointer flex-1">
                     {cert}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <Separator />
+
+        {/* Materials Filter */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium flex items-center">
+              <Leaf className="w-4 h-4 mr-2" />
+              Materiales
+            </h4>
+            {filters.materials.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary" className="text-xs">
+                  {filters.materials.length}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => clearFilter("materials")}
+                  className="h-6 px-2 text-xs"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+          <ScrollArea className="h-32">
+            <div className="space-y-2 pr-4">
+              {availableMaterials.map((material) => (
+                <div key={material} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`material-${material}`}
+                    checked={filters.materials.includes(material)}
+                    onCheckedChange={() => toggleArrayFilter("materials", material)}
+                  />
+                  <label htmlFor={`material-${material}`} className="text-sm cursor-pointer flex-1">
+                    {material}
                   </label>
                 </div>
               ))}

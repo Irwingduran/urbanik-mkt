@@ -26,6 +26,32 @@ import {
   AlertCircle
 } from "lucide-react"
 
+interface ApiOrder {
+  id: string
+  createdAt: string
+  status: string
+  total: number
+  items: {
+    id: string
+    quantity: number
+    price: number
+    product: {
+      name: string
+      images: string[]
+    }
+  }[]
+  vendorProfile?: {
+    companyName: string
+  }
+  trackingNumber?: string
+  estimatedDelivery?: string
+  actualDelivery?: string
+  shippingAddress?: {
+    street: string
+    city: string
+  }
+}
+
 interface OrderItem {
   id: string
   name: string
@@ -126,12 +152,12 @@ export default function UserOrders() {
         const data = await response.json()
         
         if (data.success) {
-          const mappedOrders = data.data.map((apiOrder: any) => ({
+          const mappedOrders = data.data.map((apiOrder: ApiOrder) => ({
             id: apiOrder.id,
             date: new Date(apiOrder.createdAt).toLocaleDateString(),
             status: apiOrder.status.toLowerCase(),
             total: apiOrder.total,
-            items: apiOrder.items.map((item: any) => ({
+            items: apiOrder.items.map((item) => ({
               id: item.id,
               name: item.product.name,
               quantity: item.quantity,

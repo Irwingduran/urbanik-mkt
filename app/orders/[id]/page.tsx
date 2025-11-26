@@ -12,15 +12,12 @@ import {
   ArrowLeft,
   Leaf,
   RotateCcw,
-  Calendar,
   MapPin,
   CreditCard,
   Copy,
   Star,
   MessageSquare,
   Download,
-  Phone,
-  Mail,
   ExternalLink
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

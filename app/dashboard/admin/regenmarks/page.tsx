@@ -13,8 +13,6 @@ import {
   Search,
   FileText,
   Clock,
-  CheckCircle,
-  XCircle,
   Eye,
   Filter,
 } from "lucide-react"
@@ -43,7 +41,7 @@ interface Evaluation {
 }
 
 export default function AdminRegenMarksPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const [evaluations, setEvaluations] = useState<Evaluation[]>([])
   const [filteredEvaluations, setFilteredEvaluations] = useState<Evaluation[]>([])
@@ -61,10 +59,12 @@ export default function AdminRegenMarksPage() {
     if (status === "authenticated") {
       fetchEvaluations()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   useEffect(() => {
     filterEvaluationsList()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, filterStatus, evaluations])
 
   const fetchEvaluations = async () => {

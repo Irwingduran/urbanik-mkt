@@ -21,6 +21,6 @@ export interface NotificationBase {
 }
 
 // Se mantiene por compatibilidad si en el futuro se desea discriminar.
-export interface ActionableNotification extends NotificationBase {}
+export type ActionableNotification = NotificationBase
 
 export type Notification = NotificationBase

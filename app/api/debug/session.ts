@@ -22,7 +22,7 @@ export async function GET() {
 
     // Información de la BD
     const dbUser = await prisma.user.findUnique({
-      where: { email: session.user?.email! },
+      where: { email: session.user?.email || '' },
       select: {
         id: true,
         email: true,

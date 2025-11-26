@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 // GET /api/user/products - Browse products (public + customer features)
 export async function GET(request: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       active: true
     }
 
@@ -68,24 +69,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Build orderBy clause
-    const orderBy: any = {}
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {}
 
     switch (sortBy) {
       case "price":
-        orderBy.price = sortOrder
+        orderBy.price = sortOrder as Prisma.SortOrder
         break
       case "regenScore":
-        orderBy.regenScore = sortOrder
+        orderBy.regenScore = sortOrder as Prisma.SortOrder
         break
       case "name":
-        orderBy.name = sortOrder
+        orderBy.name = sortOrder as Prisma.SortOrder
         break
       case "popularity":
         // Could be based on order count, for now use createdAt
         orderBy.createdAt = "desc"
         break
       default:
-        orderBy.createdAt = sortOrder
+        orderBy.createdAt = sortOrder as Prisma.SortOrder
     }
 
     const [products, totalCount] = await Promise.all([
@@ -128,7 +129,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate average rating and enhance data
-    const enhancedProducts = products.map((product: any) => ({
+    const enhancedProducts = products.map((product) => ({
       id: product.id,
       name: product.name,
       description: product.description,
@@ -144,13 +145,14 @@ export async function GET(request: NextRequest) {
       co2Reduction: product.co2Reduction,
       waterSaving: product.waterSaving,
       energyEfficiency: product.energyEfficiency,
-      vendor: product.vendor,
+      vendor: product.vendorProfile,
       averageRating: product.reviews.length > 0
-        ? product.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / product.reviews.length
+        ? product.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) / product.reviews.length
         : 0,
       reviewCount: product._count.reviews,
       totalSold: product._count.orderItems,
-      isInWishlist: session?.user?.id ? product.wishlistItems.length > 0 : false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      isInWishlist: session?.user?.id ? ((product as any).wishlistItems?.length ?? 0) > 0 : false,
       createdAt: product.createdAt
     }))
 
@@ -184,7 +186,7 @@ export async function GET(request: NextRequest) {
     // Extract unique certifications
     const uniqueCertifications = Array.from(
       new Set(
-        certificationOptions.flatMap((p: any) => p.certifications)
+        certificationOptions.flatMap((p) => p.certifications)
       )
     )
 
@@ -200,7 +202,7 @@ export async function GET(request: NextRequest) {
         hasPrev: page > 1
       },
       filters: {
-        categories: categories.map((c: any) => c.category),
+        categories: categories.map((c) => c.category),
         maxPrice: maxPriceData._max.price || 0,
         certifications: uniqueCertifications
       }

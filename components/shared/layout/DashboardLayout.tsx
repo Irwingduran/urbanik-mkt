@@ -6,11 +6,9 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Users,
   BarChart3,
   Settings,
   Store,
-  Heart,
   User,
   Shield,
   Leaf,
@@ -23,7 +21,8 @@ import {
   Info,
   Menu,
   Clock,
-  Flag
+  Flag,
+  Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,8 +36,9 @@ import {
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useNotifications } from '@/hooks/useNotifications'
+import { useNotifications, type Notification } from '@/hooks/useNotifications'
 import { useVendorStatus } from '@/hooks/useVendorStatus'
+import { Session } from 'next-auth'
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -55,15 +55,6 @@ export enum NotificationType {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error'
-}
-
-interface LegacyNotification {
-  id: number
-  type: NotificationType
-  title: string
-  message: string
-  time: string
-  read: boolean
 }
 
 interface NavItem {
@@ -294,7 +285,7 @@ const getNotificationColor = (type: NotificationType) => {
 // ============================================================================
 
 const NotificationItem: React.FC<{
-  notification: any
+  notification: Notification
   onMarkAsRead: (id: string) => void
   onDelete: (id: string) => void
 }> = ({ notification, onMarkAsRead, onDelete }) => {
@@ -386,7 +377,7 @@ const NotificationItem: React.FC<{
 }
 
 const NotificationPopover: React.FC<{
-  notifications: any[]
+  notifications: Notification[]
   unreadCount: number
   onMarkAsRead: (id: string) => void
   onMarkAllAsRead: () => void
@@ -620,7 +611,7 @@ const QuickActions: React.FC<{ role: string; onNavigate?: () => void }> = ({ rol
 }
 
 const SidebarFooter: React.FC<{
-  notifications: any[]
+  notifications: Notification[]
   unreadCount: number
   onMarkAsRead: (id: string) => void
   onMarkAllAsRead: () => void
@@ -678,7 +669,7 @@ const SidebarFooter: React.FC<{
 }
 
 const Sidebar: React.FC<{
-  session: any
+  session: Session | null
   pathname: string
   filteredNavItems: NavItem[]
   isOpen: boolean
@@ -713,16 +704,16 @@ const Sidebar: React.FC<{
 
   const handleSettings = useCallback(() => {
     // Route to role-specific settings
-    const settingsPath = session.user.role === UserRole.ADMIN
+    const settingsPath = session?.user?.role === UserRole.ADMIN
       ? '/dashboard/admin/settings'
       : '/dashboard/settings'
     router.push(settingsPath)
     if (isMobile) onClose()
-  }, [router, isMobile, onClose, session.user.role])
+  }, [router, isMobile, onClose, session?.user?.role])
 
   // Show vendor banner for USER and VENDOR roles (not ADMIN)
   // The VendorBanner component itself will handle showing different states
-  const showVendorBanner = session.user.role === UserRole.USER || session.user.role === UserRole.VENDOR
+  const showVendorBanner = session?.user?.role === UserRole.USER || session?.user?.role === UserRole.VENDOR
 
   return (
     <>
@@ -745,9 +736,9 @@ const Sidebar: React.FC<{
       >
         <div className="flex flex-col h-full">
           <SidebarHeader
-            role={session.user.role}
-            userName={session.user.name}
-            userEmail={session.user.email}
+            role={session?.user?.role || UserRole.USER}
+            userName={session?.user?.name || undefined}
+            userEmail={session?.user?.email || undefined}
           />
 
           <ScrollArea className="flex-1 p-4">
@@ -762,7 +753,7 @@ const Sidebar: React.FC<{
             <Separator className="my-4" />
 
             <QuickActions 
-              role={session.user.role} 
+              role={session?.user?.role || UserRole.USER} 
               onNavigate={isMobile ? onClose : undefined}
             />
           </ScrollArea>
@@ -776,7 +767,7 @@ const Sidebar: React.FC<{
             onSettings={handleSettings}
             onSignOut={handleSignOut}
             isSigningOut={isSigningOut}
-            showNotifications={session.user.role !== UserRole.ADMIN}
+            showNotifications={session?.user?.role !== UserRole.ADMIN}
           />
         </div>
       </aside>

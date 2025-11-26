@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Flame, Eye } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 interface TrendingProduct {
   id: string
@@ -21,7 +20,6 @@ interface TrendingProduct {
 }
 
 export function TrendingProducts() {
-  const router = useRouter()
   const [products, setProducts] = useState<TrendingProduct[]>([])
   const [loading, setLoading] = useState(true)
 

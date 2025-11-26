@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
-import { ProductApprovalStatus } from "@prisma/client"
+import { ProductApprovalStatus, Prisma } from "@prisma/client"
 import { computeProductRegenScore } from "@/lib/regenmark/services/product"
 import { CreateProductSchema } from "@/lib/validation/product"
 import { createTracer } from "@/lib/trace"
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { vendorUserId: vendorUserId }
+    const where: Prisma.ProductWhereInput = { vendorUserId: vendorUserId }
 
     if (category) {
       where.category = category
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate average rating for each product
-    const productsWithRating = products.map((product: any) => ({
+    const productsWithRating = products.map((product) => ({
       ...product,
       averageRating: product.reviews.length > 0
-        ? product.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / product.reviews.length
+        ? product.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) / product.reviews.length
         : 0,
       totalSold: product._count.orderItems
     }))

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { createNotification } from '@/lib/notifications'
 
 // POST /api/reviews - Create a new review
 export async function POST(request: NextRequest) {
@@ -107,14 +108,18 @@ export async function POST(request: NextRequest) {
 
     // 5. Notify Vendor
     if (review.product.vendorUserId) {
-      await prisma.notification.create({
-        data: {
-          userId: review.product.vendorUserId,
-          type: "PRODUCT_REVIEW",
-          title: "Nueva Reseña de Producto",
-          message: `El usuario ${review.user.name} calificó "${review.product.name}" con ${rating} estrellas.`,
-          productId: productId,
-          actionUrl: `/dashboard/vendor/products/${productId}` // Or reviews page
+      await createNotification({
+        userId: review.product.vendorUserId,
+        type: "PRODUCT_REVIEW",
+        title: "Nueva Reseña de Producto",
+        message: `El usuario ${review.user.name} calificó "${review.product.name}" con ${rating} estrellas.`,
+        productId: productId,
+        actionUrl: `/dashboard/vendor/products/${productId}`,
+        metadata: {
+          productName: review.product.name,
+          rating: rating,
+          reviewerName: review.user.name,
+          comment: comment
         }
       })
     }

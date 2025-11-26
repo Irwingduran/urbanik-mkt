@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -18,11 +17,8 @@ import {
   ArrowRight,
   Upload,
   Leaf,
-  Award,
   Recycle,
   Droplets,
-  Users,
-  Heart,
   CheckCircle,
   AlertCircle,
   X,
@@ -80,22 +76,7 @@ const steps = [
   { id: 2, title: "Impacto Ambiental", icon: Leaf },
   { id: 3, title: "Ciclo de Vida", icon: Recycle },
   { id: 4, title: "Recursos y Eficiencia", icon: Droplets },
-  { id: 5, title: "Revisión Final", icon: CheckCircle },
-]
-
-const certifications = [
-  "ISO 14001",
-  "LEED Certified",
-  "Energy Star",
-  "Carbon Neutral",
-  "Certificación Orgánica",
-  "FSC Certified",
-  "Cradle to Cradle",
-  "EPEAT",
-  "Green Seal",
-  "Fair Trade",
-  "B Corp",
-  "OEKO-TEX",
+    { id: 5, title: "Revisión Final", icon: CheckCircle },
 ]
 
 const sustainabilityBenefits = [
@@ -157,7 +138,6 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
     },
   })
 
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,9 +154,9 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
   }
 
   const uploadImages = async () => {
-    if (selectedImages.length === 0) return []
+    if (formData.images.length === 0) return []
 
-    const uploadPromises = selectedImages.map(async (file) => {
+    const uploadPromises = formData.images.map(async (file) => {
       const formData = new FormData()
       formData.append("file", file)
 
@@ -324,7 +304,7 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
       
       // Upload images first
       let imageUrls: string[] = []
-      if (selectedImages.length > 0) {
+      if (formData.images.length > 0) {
         try {
           imageUrls = await uploadImages()
         } catch (uploadError) {
@@ -424,10 +404,11 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
 
       setIsUploading(false)
       onBack()
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error al enviar producto:", error)
       setIsUploading(false)
-      alert(`Error: ${error.message || "No se pudo crear el producto"}`)
+      const message = error instanceof Error ? error.message : "No se pudo crear el producto"
+      alert(`Error: ${message}`)
     }
   }
 
@@ -540,9 +521,9 @@ export default function AddProductForm({ onBack }: AddProductFormProps) {
               </div>
               
               {/* Image Previews */}
-              {selectedImages.length > 0 && (
+              {formData.images.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  {selectedImages.map((file, index) => (
+                  {formData.images.map((file, index) => (
                     <div key={index} className="relative group border rounded-lg overflow-hidden aspect-square">
                       <img
                         src={URL.createObjectURL(file)}

@@ -30,8 +30,9 @@ export default function CommissionsSettingsSection({ value, onSave }: Props) {
     try {
       await onSave(data)
       toast.success('Comisiones actualizadas')
-    } catch (e: any) {
-      toast.error(e.message || 'Error al guardar')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Error al guardar'
+      toast.error(message)
     }
   }
 

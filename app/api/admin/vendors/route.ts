@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { Prisma, ApplicationStatus } from '@prisma/client'
 
 // GET /api/admin/vendors - List all vendor applications with pagination
 export async function GET(request: NextRequest) {
@@ -21,10 +22,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: Prisma.VendorApplicationWhereInput = {}
 
     if (status) {
-      where.status = status.toUpperCase()
+      where.status = status.toUpperCase() as ApplicationStatus
     }
 
     if (search) {
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
             verifiedBy: adminUser.id,
             onboardingStatus: "APPROVED",
             active: true,
-            certifications: (application.documents as any)?.certifications || []
+            certifications: ((application.documents as Record<string, unknown>)?.certifications as string[]) || []
           },
           update: {
             companyName: application.companyName,

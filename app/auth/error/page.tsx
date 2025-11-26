@@ -32,7 +32,7 @@ export default function AuthErrorPage() {
             <span className="font-bold text-2xl text-gray-900">Urbanika Marketplace</span>
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Authentication Error</h2>
-          <p className="mt-2 text-gray-600">We couldn't complete your sign in.</p>
+          <p className="mt-2 text-gray-600">We couldn&apos;t complete your sign in.</p>
         </div>
 
         <Card>

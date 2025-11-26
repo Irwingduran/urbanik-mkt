@@ -15,8 +15,6 @@ import {
   Users,
   Mail,
   Calendar,
-  Shield,
-  MoreVertical,
   Lock,
   Unlock,
   Eye,
@@ -59,10 +57,12 @@ export default function AdminUsersPage() {
     if (status === 'authenticated') {
       fetchUsers()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
   useEffect(() => {
     filterUsersList()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, filterRole, filterStatus, users])
 
   const fetchUsers = async () => {

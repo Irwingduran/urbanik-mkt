@@ -26,7 +26,7 @@ export async function GET() {
         uptime: process.uptime(),
       }
     })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Health check failed' }, { status: 500 })
   }
 }

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, ArrowRight, Star, Percent, TrendingUp, Zap, Heart, ShoppingCart, Leaf, Sparkles, Target, Users, Clock, Award } from "lucide-react"
+import { Search, ArrowRight, Star, Percent, TrendingUp, Zap, Heart, ShoppingCart, Leaf, Sparkles } from "lucide-react"
 import { ProductCarousel } from "@/components/marketplace/product-carousel"
 import Header from "@/components/layout/header"
 import ImpactBanner from "@/components/home/impact-banner"
@@ -46,7 +46,6 @@ export default function Homepage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [promotionalProducts, setPromotionalProducts] = useState<Product[]>([])
   const [saleProducts, setSaleProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [activeImpactMetric, setActiveImpactMetric] = useState(0)
 
   // Handle search - redirect to marketplace with search term
@@ -63,8 +62,6 @@ export default function Homepage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        setLoading(true)
-
         // Fetch featured products
         const featuredResponse = await fetch('/api/products?featured=true&limit=6')
         const featuredData = await featuredResponse.json()
@@ -94,8 +91,6 @@ export default function Homepage() {
 
       } catch (error) {
         console.error('Error fetching products:', error)
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -111,6 +106,7 @@ export default function Homepage() {
   }, [])
 
   // Transform API product to frontend format
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformProduct = (product: any): Product => ({
     id: product.id,
     name: product.name,
@@ -137,11 +133,6 @@ export default function Homepage() {
     stock: product.stock || 0,
     maxOrderQuantity: product.maxOrderQuantity || 1
   })
-
-  const calculateDiscount = (price: number, originalPrice?: number) => {
-    if (!originalPrice || originalPrice <= price) return 0
-    return Math.round(((originalPrice - price) / originalPrice) * 100)
-  }
 
   const impactMetrics = [
     { value: "2,847", label: "Toneladas CO₂ ahorradas", icon: Leaf },

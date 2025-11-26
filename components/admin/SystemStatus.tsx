@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export interface SystemStatus {
   database: 'operational' | 'degraded' | 'down'

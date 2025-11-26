@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { RegenMarkType } from '@prisma/client'
 
 interface RegenMarkEvaluation {
   type: string
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       validMarks.map(mark => 
         prisma.regenMarkEvaluation.create({
           data: {
-            type: regenMarkTypeMap[mark.type] as any,
+            type: regenMarkTypeMap[mark.type] as RegenMarkType,
             vendorProfileId: vendorProfile.id,
             status: 'PENDING',
             stage: 'SUBMITTED',
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET para obtener estado de evaluaciones del vendedor
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {

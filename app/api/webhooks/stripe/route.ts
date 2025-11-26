@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { stripe } from "@/lib/stripe"
+import { createNotification } from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
+import Stripe from 'stripe'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
@@ -10,12 +12,13 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const signature = headers().get("stripe-signature")!
 
-    let event: any
+    let event: Stripe.Event
 
     try {
       event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
-    } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      console.error("Webhook signature verification failed:", errorMessage)
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
     }
 
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
         break
 
       case "charge.dispute.created":
-        await handleChargeDispute(event.data.object)
+        await handleChargeDispute(event.data.object as Stripe.Dispute)
         break
 
       default:
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handlePaymentSuccess(paymentIntent: any) {
+async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   try {
     console.log("Processing successful payment:", paymentIntent.id)
 
@@ -102,7 +105,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
     // Update all orders to PROCESSING status
     await Promise.all(
-      orders.map(async (order: any) => {
+      orders.map(async (order) => {
         // Update order status
         await prisma.order.update({
           where: { id: order.id },
@@ -113,32 +116,32 @@ async function handlePaymentSuccess(paymentIntent: any) {
         })
 
         // Create customer notification
-        await prisma.notification.create({
-          data: {
-            userId: order.userId,
-            orderId: order.id,
-            type: "PAYMENT_SUCCESS",
-            title: "Pago Confirmado",
-            message: `Tu pago de $${order.total.toFixed(2)} ha sido procesado exitosamente. Tu pedido está siendo preparado.`,
-            actionUrl: `/orders/${order.id}`
+        await createNotification({
+          userId: order.userId,
+          orderId: order.id,
+          type: "PAYMENT_SUCCESS",
+          title: "Pago Confirmado",
+          message: `Tu pago de $${order.total.toFixed(2)} ha sido procesado exitosamente. Tu pedido está siendo preparado.`,
+          actionUrl: `/orders/${order.id}`,
+          metadata: {
+            total: order.total,
+            items: order.items
           }
         })
 
         // Create vendor notification
-        await prisma.notification.create({
-          data: {
-            userId: order.vendorProfile.user.id,
-            orderId: order.id,
-            type: "ORDER_CREATED",
-            title: "Nuevo Pedido",
-            message: `Tienes un nuevo pedido por $${order.total.toFixed(2)} de ${order.user.name}`,
-            actionUrl: `/dashboard/vendor/orders/${order.id}`
-          }
+        await createNotification({
+          userId: order.vendorProfile.user.id,
+          orderId: order.id,
+          type: "ORDER_CREATED",
+          title: "Nuevo Pedido",
+          message: `Tienes un nuevo pedido por $${order.total.toFixed(2)} de ${order.user.name}`,
+          actionUrl: `/dashboard/vendor/orders/${order.id}`
         })
 
         // Update product sales count
         await Promise.all(
-          order.items.map((item: any) =>
+          order.items.map((item) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -150,7 +153,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
         )
 
         // Clear user's cart items for products in this order
-        const productIds = order.items.map((item: any) => item.productId)
+        const productIds = order.items.map((item) => item.productId)
         await prisma.cartItem.deleteMany({
           where: {
             userId: order.userId,
@@ -163,8 +166,8 @@ async function handlePaymentSuccess(paymentIntent: any) {
     )
 
     // Update user loyalty points (if not already done)
-    const totalRegenScore = orders.reduce((sum: number, order: any) =>
-      sum + order.items.reduce((itemSum: number, item: any) =>
+    const totalRegenScore = orders.reduce((sum: number, order) =>
+      sum + order.items.reduce((itemSum: number, item) =>
         itemSum + (item.product.regenScore || 0) * item.quantity, 0
       ), 0
     )
@@ -190,7 +193,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
   }
 }
 
-async function handlePaymentFailed(paymentIntent: any) {
+async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
   try {
     console.log("Processing failed payment:", paymentIntent.id)
 
@@ -221,7 +224,7 @@ async function handlePaymentFailed(paymentIntent: any) {
 
     // Update orders to CANCELLED and restore stock
     await Promise.all(
-      orders.map(async (order: any) => {
+      orders.map(async (order) => {
         // Update order status
         await prisma.order.update({
           where: { id: order.id },
@@ -233,7 +236,7 @@ async function handlePaymentFailed(paymentIntent: any) {
 
         // Restore product stock
         await Promise.all(
-          order.items.map((item: any) =>
+          order.items.map((item) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -266,7 +269,7 @@ async function handlePaymentFailed(paymentIntent: any) {
   }
 }
 
-async function handlePaymentCanceled(paymentIntent: any) {
+async function handlePaymentCanceled(paymentIntent: Stripe.PaymentIntent) {
   try {
     console.log("Processing canceled payment:", paymentIntent.id)
 
@@ -295,7 +298,7 @@ async function handlePaymentCanceled(paymentIntent: any) {
     }
 
     await Promise.all(
-      orders.map(async (order: any) => {
+      orders.map(async (order) => {
         await prisma.order.update({
           where: { id: order.id },
           data: {
@@ -306,7 +309,7 @@ async function handlePaymentCanceled(paymentIntent: any) {
 
         // Restore stock
         await Promise.all(
-          order.items.map((item: any) =>
+          order.items.map((item) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -337,12 +340,12 @@ async function handlePaymentCanceled(paymentIntent: any) {
   }
 }
 
-async function handleChargeDispute(charge: any) {
+async function handleChargeDispute(dispute: Stripe.Dispute) {
   try {
-    console.log("Processing charge dispute:", charge.id)
+    console.log("Processing charge dispute:", dispute.id)
 
     // Find orders associated with this charge
-    const paymentIntent = await stripe.paymentIntents.retrieve(charge.payment_intent)
+    const paymentIntent = await stripe.paymentIntents.retrieve(dispute.payment_intent as string)
 
     const orders = await prisma.order.findMany({
       where: { stripePaymentId: paymentIntent.id },
@@ -362,7 +365,7 @@ async function handleChargeDispute(charge: any) {
 
     // Create notifications for vendors about the dispute
     await Promise.all(
-      orders.map((order: any) =>
+      orders.map((order) =>
         prisma.notification.create({
           data: {
             userId: order.vendorProfile.user.id,

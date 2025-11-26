@@ -6,7 +6,6 @@ import { DashboardLayout, DashboardHeader } from '@/components/shared/layout/Das
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import {
   ShoppingCart,
   Heart,
@@ -14,7 +13,6 @@ import {
   Droplets,
   Zap,
   Package,
-  TrendingUp,
   Award,
   Calendar
 } from 'lucide-react'

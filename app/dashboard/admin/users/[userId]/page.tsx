@@ -14,7 +14,6 @@ import {
   Calendar,
   Shield,
   Lock,
-  Unlock,
   Copy,
   CheckCircle2,
   Clock,
@@ -40,7 +39,6 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const [statusChanging, setStatusChanging] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -56,6 +54,7 @@ export default function AdminUserDetailPage() {
     if (status === 'authenticated' && userId) {
       fetchUserDetail()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router, userId])
 
   const fetchUserDetail = async () => {
@@ -267,7 +266,6 @@ export default function AdminUserDetailPage() {
           <Button
             variant="outline"
             className="w-full gap-2"
-            disabled={statusChanging}
           >
             <Shield className="w-4 h-4" />
             Cambiar Rol

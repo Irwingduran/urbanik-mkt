@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { User, Mail, Shield, Settings, Clock, Key, Activity } from 'lucide-react'
+import { User, Shield, Settings, Clock, Key, Activity } from 'lucide-react'
 
 export default function AdminProfile() {
   const { data: session, status } = useSession()

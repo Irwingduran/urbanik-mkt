@@ -5,9 +5,23 @@ import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
+interface ApiData {
+  database: {
+    email: string
+    name: string
+    role: string
+    userRoles: Array<{ role: string }>
+  }
+  middleware_check: {
+    hasVendorRole: boolean
+    canAccessVendorDashboard: boolean
+    canAccessAdminDashboard: boolean
+  }
+}
+
 export default function DebugSessionPage() {
   const { data: session, status } = useSession()
-  const [apiData, setApiData] = useState<any>(null)
+  const [apiData, setApiData] = useState<ApiData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -103,7 +117,7 @@ export default function DebugSessionPage() {
               <div>
                 <label className="font-semibold">Active Roles (userRoles table):</label>
                 <div className="flex gap-2 flex-wrap">
-                  {apiData.database.userRoles?.map((ur: any) => (
+                  {apiData.database.userRoles?.map((ur) => (
                     <Badge key={ur.role} className="bg-purple-600">{ur.role}</Badge>
                   ))}
                 </div>
@@ -169,8 +183,8 @@ export default function DebugSessionPage() {
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
               <p className="font-semibold text-blue-900">💡 What to do:</p>
               <ol className="text-sm text-blue-800 list-decimal list-inside space-y-1">
-                <li>Check if "Can access /dashboard/vendor" is ✅ YES</li>
-                <li>If NO, your user doesn't have VENDOR role in the database</li>
+                <li>Check if &quot;Can access /dashboard/vendor&quot; is ✅ YES</li>
+                <li>If NO, your user doesn&apos;t have VENDOR role in the database</li>
                 <li>Ask an admin to give you VENDOR role, or:</li>
                 <li>Run: <code className="bg-white px-2 py-1 rounded font-mono">node scripts/make-vendor.js</code></li>
                 <li>After changing role, <strong>close this tab completely</strong></li>

@@ -5,6 +5,16 @@ export interface ApiFetchOptions extends RequestInit {
   requestId?: string
 }
 
+export class ApiError extends Error {
+  status: number
+  body: string
+  constructor(message: string, status: number, body: string) {
+    super(message)
+    this.status = status
+    this.body = body
+  }
+}
+
 export async function apiFetch(input: RequestInfo | URL, init: ApiFetchOptions = {}) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), init.signal ? 0 : 30000)
@@ -17,10 +27,7 @@ export async function apiFetch(input: RequestInfo | URL, init: ApiFetchOptions =
     const res = await fetch(input, { ...init, headers, signal: init.signal || controller.signal, cache: init.cache || 'no-store' })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      const err = new Error(`API ${res.status}: ${res.statusText} ${text}`)
-      ;(err as any).status = res.status
-      ;(err as any).body = text
-      throw err
+      throw new ApiError(`API ${res.status}: ${res.statusText} ${text}`, res.status, text)
     }
     return res
   } finally {
@@ -28,7 +35,7 @@ export async function apiFetch(input: RequestInfo | URL, init: ApiFetchOptions =
   }
 }
 
-export async function apiJson<T = any>(input: RequestInfo | URL, init?: ApiFetchOptions): Promise<T> {
+export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: ApiFetchOptions): Promise<T> {
   const res = await apiFetch(input, init)
   return res.json() as Promise<T>
 }

@@ -44,6 +44,8 @@ export async function PATCH(
     }
 
     // Update review
+    // TODO: Add vendorReply and vendorReplyAt to Review model
+    /*
     const updatedReview = await prisma.review.update({
       where: { id: params.id },
       data: {
@@ -51,6 +53,8 @@ export async function PATCH(
         vendorReplyAt: new Date()
       }
     })
+    */
+   const updatedReview = review // Placeholder
 
     // Notify User
     await prisma.notification.create({

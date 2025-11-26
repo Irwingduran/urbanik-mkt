@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,7 +52,7 @@ interface PaginationData {
 export default function AdminProductsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const searchParams = useSearchParams()
+  // const searchParams = useSearchParams()
 
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<PaginationData>({
@@ -81,12 +81,14 @@ export default function AdminProductsPage() {
     if (status === 'authenticated') {
       fetchProducts()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user.role === 'ADMIN') {
       fetchProducts()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterStatus])
 
   const fetchProducts = async () => {

@@ -4,7 +4,7 @@
 type LogLevel = "debug" | "info" | "warn" | "error"
 
 interface LogMeta {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const LEVELS: Record<LogLevel, number> = {

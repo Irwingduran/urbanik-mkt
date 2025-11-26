@@ -2,10 +2,10 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { Prisma, ApplicationStatus } from '@prisma/client'
 import { VendorApplicationsTable } from '@/components/admin/VendorApplicationsTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Store, Clock, CheckCircle, XCircle } from 'lucide-react'
-import Link from 'next/link'
 
 export default async function AdminVendorsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const session = await getServerSession(authOptions)
@@ -16,9 +16,9 @@ export default async function AdminVendorsPage({ searchParams }: { searchParams:
   }
 
   const statusParam = typeof searchParams?.status === 'string' ? searchParams.status.toUpperCase() : undefined
-  const where: any = {}
+  const where: Prisma.VendorApplicationWhereInput = {}
   if (statusParam && ['PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'].includes(statusParam)) {
-    where.status = statusParam
+    where.status = statusParam as ApplicationStatus
   }
 
   // Fetch initial data (respect searchParams.status when present)

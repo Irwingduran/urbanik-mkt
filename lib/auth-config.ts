@@ -80,8 +80,9 @@ baseProviders.push(
         try {
           isPasswordValid = await tracer.span("bcrypt.compare", async () => bcrypt.compare(inputPassword, userPassword))
           logger.debug("authorize.password_compared", { email: credentials.email.trim(), result: isPasswordValid })
-        } catch (err: any) {
-          logger.error("authorize.bcrypt_error", { email: credentials.email, error: err?.message })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          logger.error("authorize.bcrypt_error", { email: credentials.email, error: message })
           return null
         }
 
@@ -128,13 +129,13 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger }) {
       // Initial sign in - get roles from user object or fetch fresh from DB
       if (user) {
         token.userId = user.id
         token.role = user.role
         // Use roles from authorize() response if available, otherwise fallback to single role
-        token.roles = (user as any).roles || [user.role]
+        token.roles = (user as { roles?: Role[] }).roles || [user.role]
         token.lastRoleRefresh = Date.now()
         logger.debug("auth.jwt.initial_sign_in", { userId: token.userId, roles: token.roles })
       }
@@ -177,7 +178,8 @@ export const authOptions: NextAuthOptions = {
             token.lastRoleRefresh = now
           } catch (error) {
             console.error('Error refreshing user roles:', error)
-            logger.error("auth.jwt.roles_refresh_error", { userId: token.userId, error: (error as any)?.message })
+            const message = error instanceof Error ? error.message : 'Unknown error'
+            logger.error("auth.jwt.roles_refresh_error", { userId: token.userId, error: message })
             // Fallback to existing roles if DB query fails
           }
         }
@@ -188,13 +190,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.userId as string
-        session.user.role = (token.role || 'USER') as any
-        session.user.roles = (token.roles || ['USER']) as any
+        session.user.role = (token.role || 'USER') as Role
+        session.user.roles = (token.roles || ['USER']) as Role[]
         logger.debug("auth.session.built", { userId: session.user.id, roles: session.user.roles })
       }
       return session
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (account?.provider === "google") {
         // Handle Google OAuth user creation with default CUSTOMER role
         const existingUser = await prisma.user.findUnique({

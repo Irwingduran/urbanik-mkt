@@ -15,14 +15,7 @@ import {
   Textarea
 } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { AlertCircle, CheckCircle, XCircle, Trash2, ArrowLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle, Trash2, ArrowLeft } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface Flag {
@@ -51,10 +44,11 @@ export default function ModerationDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const [resolution, setResolution] = useState('')
-  const [newStatus, setNewStatus] = useState('')
+  // const [newStatus, setNewStatus] = useState('')
 
   useEffect(() => {
     fetchFlagDetail()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagId])
 
   const fetchFlagDetail = async () => {
@@ -68,7 +62,7 @@ export default function ModerationDetailPage() {
 
       const data = await response.json()
       setFlag(data.data)
-      setNewStatus(data.data.status)
+      // setNewStatus(data.data.status)
       setResolution(data.data.resolution || '')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido'

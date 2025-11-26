@@ -24,8 +24,9 @@ export function createTracer(component: string, baseMeta?: LogMeta) {
       const res = await fn()
       end()
       return res
-    } catch (err: any) {
-      end({ error: err?.message || String(err) })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      end({ error: message })
       throw err
     }
   }

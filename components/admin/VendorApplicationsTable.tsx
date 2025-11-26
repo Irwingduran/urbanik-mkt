@@ -39,7 +39,6 @@ import {
   FileText,
   Building2,
   Mail,
-  Phone,
   Globe,
   MapPin,
   Calendar,
@@ -50,6 +49,33 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+
+interface VendorDocumentItem {
+  url: string
+  filename: string
+  type?: string
+  size?: number
+}
+
+interface VendorDocuments {
+  contactName?: string
+  contactEmail?: string
+  certificationDocuments?: VendorDocumentItem[]
+  category?: string
+  sustainabilityIntent?: string
+  certifications?: string[]
+  environmentalCertifications?: string[]
+  sustainabilityGoals?: string[]
+  laborPractices?: string
+  communityImpact?: string
+  laborCompliance?: string
+  fairTradeCertified?: boolean
+  localSourcingPercent?: number
+  animalTestingPolicy?: string
+  animalOriginUse?: string
+  animalWelfarePolicies?: string
+  ethicalAlternatives?: string
+}
 
 interface VendorApplication {
   id: string
@@ -65,7 +91,7 @@ interface VendorApplication {
   reviewedAt: string | null
   rejectionReason: string | null
   internalNotes: string | null
-  documents: any
+  documents: VendorDocuments
   user: {
     id: string
     name: string | null
@@ -523,7 +549,7 @@ export function VendorApplicationsTable({
                     <Mail className="w-3 h-3" />
                     Email
                   </Label>
-                  <p className="mt-1">{selectedApplication.user.email}</p>
+                  <p className="mt-1">{selectedApplication.user.email as string}</p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Nombre</Label>
@@ -532,15 +558,15 @@ export function VendorApplicationsTable({
               </div>
 
               {/* Contact Info */}
-              {selectedApplication.businessPhone && (
+              {/* {(selectedApplication.businessPhone as string) && (
                 <div>
                   <Label className="text-xs text-gray-500 flex items-center gap-1">
                     <Phone className="w-3 h-3" />
                     Teléfono
                   </Label>
-                  <p className="mt-1">{selectedApplication.businessPhone}</p>
+                  <p className="mt-1">{selectedApplication.businessPhone as string}</p>
                 </div>
-              )}
+              )} */}
 
               {selectedApplication.website && (
                 <div>
@@ -554,18 +580,18 @@ export function VendorApplicationsTable({
                     rel="noopener noreferrer"
                     className="mt-1 text-blue-600 hover:underline block"
                   >
-                    {selectedApplication.website}
+                    {selectedApplication.website as string}
                   </a>
                 </div>
               )}
 
-              {selectedApplication.businessAddress && (
+              {(selectedApplication.businessAddress as string) && (
                 <div>
                   <Label className="text-xs text-gray-500 flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     Dirección
                   </Label>
-                  <p className="mt-1">{selectedApplication.businessAddress}</p>
+                  <p className="mt-1">{selectedApplication.businessAddress as string}</p>
                 </div>
               )}
 
@@ -584,14 +610,17 @@ export function VendorApplicationsTable({
                     <Award className="w-3 h-3" />
                     Categoría Principal
                   </Label>
-                  <p className="mt-1 text-sm">{mapCategoryLabel(selectedApplication.documents.category)}</p>
+                  <p className="mt-1 text-sm">{mapCategoryLabel(selectedApplication.documents.category as string)}</p>
                 </div>
               )}
 
               {/* Sustainability Section */}
-              {(selectedApplication.documents?.certifications?.length ||
-                selectedApplication.documents?.environmentalCertifications?.length ||
-                selectedApplication.documents?.sustainabilityGoals?.length ||
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {((selectedApplication.documents?.certifications as any[])?.length ||
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                (selectedApplication.documents?.environmentalCertifications as any[])?.length ||
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                (selectedApplication.documents?.sustainabilityGoals as any[])?.length ||
                 selectedApplication.documents?.sustainabilityIntent) && (
                 <div id="sec-sustainability" className="border rounded-lg p-3 scroll-mt-16">
                   <Label className="text-xs text-gray-700 flex items-center gap-1">
@@ -602,7 +631,7 @@ export function VendorApplicationsTable({
                     {selectedApplication.documents?.sustainabilityIntent && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Intención</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.sustainabilityIntent}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.sustainabilityIntent as string}</p>
                       </div>
                     )}
 
@@ -657,19 +686,19 @@ export function VendorApplicationsTable({
                     {selectedApplication.documents?.laborPractices && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Relación con Empleados</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborPractices}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborPractices as string}</p>
                       </div>
                     )}
                     {selectedApplication.documents?.communityImpact && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Impacto en Comunidades</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.communityImpact}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.communityImpact as string}</p>
                       </div>
                     )}
                     {selectedApplication.documents?.laborCompliance && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Cumplimiento Laboral</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborCompliance}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.laborCompliance as string}</p>
                       </div>
                     )}
                     {typeof selectedApplication.documents?.fairTradeCertified !== 'undefined' && (
@@ -681,7 +710,7 @@ export function VendorApplicationsTable({
                     {typeof selectedApplication.documents?.localSourcingPercent !== 'undefined' && selectedApplication.documents.localSourcingPercent !== null && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Abastecimiento Local</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.localSourcingPercent}%</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.localSourcingPercent as number}%</p>
                       </div>
                     )}
                   </div>
@@ -699,25 +728,25 @@ export function VendorApplicationsTable({
                     {selectedApplication.documents?.animalTestingPolicy && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Política de Pruebas</Label>
-                        <p className="text-sm mt-0.5">{mapAnimalTestingPolicy(selectedApplication.documents.animalTestingPolicy)}</p>
+                        <p className="text-sm mt-0.5">{mapAnimalTestingPolicy(selectedApplication.documents.animalTestingPolicy as string)}</p>
                       </div>
                     )}
                     {selectedApplication.documents?.animalOriginUse && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Uso de Productos de Origen Animal</Label>
-                        <p className="text-sm mt-0.5">{mapAnimalOriginUse(selectedApplication.documents.animalOriginUse)}</p>
+                        <p className="text-sm mt-0.5">{mapAnimalOriginUse(selectedApplication.documents.animalOriginUse as string)}</p>
                       </div>
                     )}
                     {selectedApplication.documents?.animalWelfarePolicies && (
                       <div>
                         <Label className="text-[11px] text-gray-500">Políticas de Bienestar</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.animalWelfarePolicies}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.animalWelfarePolicies as string}</p>
                       </div>
                     )}
                     {selectedApplication.documents?.ethicalAlternatives && (
                       <div>
                         <Label className="text=[11px] text-gray-500">Alternativas Éticas</Label>
-                        <p className="text-sm mt-0.5">{selectedApplication.documents.ethicalAlternatives}</p>
+                        <p className="text-sm mt-0.5">{selectedApplication.documents.ethicalAlternatives as string}</p>
                       </div>
                     )}
                   </div>
@@ -798,7 +827,7 @@ export function VendorApplicationsTable({
                     Documentación Adjunta
                   </Label>
                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedApplication.documents.certificationDocuments.map((doc: any, idx: number) => {
+                    {selectedApplication.documents.certificationDocuments.map((doc, idx) => {
                       const isImage = typeof doc?.type === 'string' && doc.type.startsWith('image')
                       return (
                         <a

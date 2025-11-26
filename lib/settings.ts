@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import { AdminSettings } from '@/components/admin/settings/types'
 
 // Defaults centralizados
@@ -45,13 +44,13 @@ export async function loadAllSettings(): Promise<AdminSettings> {
   try {
     // TODO: Cambiar a: const rows = await prisma.platformSetting.findMany()
     // Una vez que Prisma Client regenere correctamente
-    const rows: any[] = [] // Temporary fallback: always use defaults
-    const merged: any = { ...DEFAULT_SETTINGS }
+    const rows: Array<{ group: string; key: string; value: unknown }> = [] // Temporary fallback: always use defaults
+    const merged = { ...DEFAULT_SETTINGS } as unknown as Record<string, Record<string, unknown>>
     for (const row of rows) {
       if (!merged[row.group]) merged[row.group] = {}
       merged[row.group][row.key] = row.value
     }
-    return merged as AdminSettings
+    return merged as unknown as AdminSettings
   } catch (error) {
     console.warn('Error loading settings from DB, using defaults:', error)
     return DEFAULT_SETTINGS
@@ -60,10 +59,9 @@ export async function loadAllSettings(): Promise<AdminSettings> {
 
 export async function saveSettingsSection<T extends keyof AdminSettings>(
   section: T,
-  data: AdminSettings[T],
-  adminUserId?: string
+  data: AdminSettings[T]
 ) {
-  const entries = Object.entries(data as any)
+  const entries = Object.entries(data as unknown as Record<string, unknown>)
   for (const [key, value] of entries) {
     try {
       // TODO: Cambiar a: await prisma.platformSetting.upsert({...})

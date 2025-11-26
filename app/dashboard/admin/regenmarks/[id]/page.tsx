@@ -10,19 +10,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import {
-  ArrowLeft,
   AlertCircle,
   FileText,
   Download,
   CheckCircle,
   XCircle,
-  Clock,
   Building,
   Calendar,
   Save,
 } from "lucide-react"
 import { formatRegenMarkType, REGENMARK_TYPES } from "@/lib/regenmark"
-import Link from "next/link"
 import type { RegenMarkType } from "@prisma/client"
 
 interface Document {
@@ -73,6 +70,7 @@ export default function AdminEvaluationDetailPage() {
 
   useEffect(() => {
     fetchEvaluationDetail()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evaluationId])
 
   const fetchEvaluationDetail = async () => {

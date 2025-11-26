@@ -16,10 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/hooks/useAuth"
-import { useVendorStatus } from "@/hooks/useVendorStatus"
 import { CartCounter } from "@/components/cart/CartCounter"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
-import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart, Clock, CheckCircle, Flag } from "lucide-react"
+import { Search, User, Menu, X, Leaf, Store, BarChart3, Package, Truck, FileText, LogOut, Settings, Shield, Crown, ShoppingCart, Flag } from "lucide-react"
 
 // Types para mejor TypeScript support
 interface User {
@@ -30,13 +29,6 @@ interface User {
 }
 
 type UserRoleType = 'ADMIN' | 'VENDOR' | 'USER' | 'CUSTOMER' | null
-
-interface AuthState {
-  isAuthenticated: boolean
-  user: User | null
-  role: UserRoleType
-  isLoading: boolean
-}
 
 // Navegación: tipado consistente para evitar uniones incompatibles
 interface NavItem {
@@ -53,9 +45,6 @@ export default function Header() {
 
   // Usar SOLO el custom auth hook que ya maneja la sesión correctamente
   const { user, isAuthenticated, isLoading, role } = useAuth()
-
-  // Get vendor status to conditionally show "Vender" button
-  const { status: vendorStatus, hasVendorRole } = useVendorStatus()
 
   // Simplificar el estado local
   const authState = {
@@ -114,56 +103,6 @@ export default function Header() {
   }, [pathname])
 
   // Determine vendor button state based on application status
-  const getVendorButton = () => {
-    // If authenticated user
-    if (isAuthenticated) {
-      // Priority 1: VENDOR approved - show link to vendor dashboard
-      if (hasVendorRole || vendorStatus === 'approved') {
-        return {
-          name: "Mi Tienda",
-          href: "/dashboard/vendor",
-          icon: Store,
-          className: "text-blue-600 hover:text-blue-700 font-semibold"
-        }
-      }
-
-      // Priority 2: PENDING or IN_REVIEW - show status button
-      if (vendorStatus === 'pending' || vendorStatus === 'in_review') {
-        return {
-          name: "Verificando datos",
-          href: "/dashboard",
-          icon: Clock,
-          className: "text-yellow-600 hover:text-yellow-700 font-medium"
-        }
-      }
-
-      // Priority 3: REJECTED or NOT_APPLIED - show onboarding button
-      if (vendorStatus === 'rejected' || vendorStatus === 'not_applied') {
-        return {
-          name: "Vender",
-          href: "/onboarding",
-          icon: Store,
-          className: "text-gray-700 hover:text-green-600 font-medium"
-        }
-      }
-    }
-
-    // ADMIN users do NOT see the "Vender" button
-    if (authState.role === 'ADMIN') {
-      return null
-    }
-
-    // For guest users - show vender button
-    return {
-      name: "Vender",
-      href: "/onboarding",
-      icon: Store,
-      className: "text-gray-700 hover:text-green-600 font-medium"
-    }
-  }
-
-  const vendorButton = getVendorButton()
-
   // Navigation items con validación de roles
   const navigation: NavItem[] = [
     { name: "Promociones", href: "/promotions", roles: ['GUEST', 'USER', 'VENDOR', 'ADMIN'] },

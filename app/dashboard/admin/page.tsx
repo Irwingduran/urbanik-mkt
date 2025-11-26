@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
   const [vendorApplications, setVendorApplications] = useState<VendorApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
-  const { stats, data, isLoading: statsLoading, isError: statsError, error: statsErrorObj, refetch } = useAdminDashboard()
+  const { stats, data, isLoading: statsLoading, isError: statsError, error: statsErrorObj } = useAdminDashboard()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -47,6 +47,7 @@ export default function AdminDashboardPage() {
     if (status === 'authenticated') {
       fetchVendorApplications()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
   const fetchVendorApplications = async () => {
@@ -332,6 +333,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Actividad reciente */}
+  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
   <RecentActivityTable orders={data?.recentActivity as any} loading={statsLoading} />
 
         {/* Dashboard mejorado: System Status, Activity Feed, Top Sellers, Trending Products */}

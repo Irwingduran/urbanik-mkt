@@ -124,7 +124,7 @@ export function calculateRegenScore(
  */
 export function calculateIndividualRegenMarkScore(
   type: RegenMarkType,
-  metrics: Record<string, any>
+  metrics: Record<string, unknown>
 ): number {
   // This will be implemented with specific scoring logic for each type
   // For now, return a placeholder
@@ -157,7 +157,7 @@ export function calculateIndividualRegenMarkScore(
  * - Carbon offset (20 points)
  * - Certifications (10 points)
  */
-function calculateCarbonSaverScore(metrics: Record<string, any>): number {
+function calculateCarbonSaverScore(metrics: Record<string, unknown>): number {
   let score = 0
 
   // Carbon neutrality (40 points)
@@ -199,7 +199,7 @@ function calculateCarbonSaverScore(metrics: Record<string, any>): number {
  * - Wastewater treatment (20 points)
  * - Certifications (10 points)
  */
-function calculateWaterGuardianScore(metrics: Record<string, any>): number {
+function calculateWaterGuardianScore(metrics: Record<string, unknown>): number {
   let score = 0
 
   // Water saved (40 points max)
@@ -234,7 +234,7 @@ function calculateWaterGuardianScore(metrics: Record<string, any>): number {
  * - Circular economy (20 points)
  * - Waste reduction (10 points)
  */
-function calculateCircularChampionScore(metrics: Record<string, any>): number {
+function calculateCircularChampionScore(metrics: Record<string, unknown>): number {
   let score = 0
 
   // Recycling rate (40 points max)
@@ -269,7 +269,7 @@ function calculateCircularChampionScore(metrics: Record<string, any>): number {
  * - Local employees (25 points)
  * - Community programs (20 points)
  */
-function calculateHumanFirstScore(metrics: Record<string, any>): number {
+function calculateHumanFirstScore(metrics: Record<string, unknown>): number {
   let score = 0
 
   // Fair wages (30 points)
@@ -303,7 +303,7 @@ function calculateHumanFirstScore(metrics: Record<string, any>): number {
  * - No animal testing policy (30 points)
  * - Ethical supply chain (20 points)
  */
-function calculateHumaneHeroScore(metrics: Record<string, any>): number {
+function calculateHumaneHeroScore(metrics: Record<string, unknown>): number {
   let score = 0
 
   // Cruelty-free certification (50 points)

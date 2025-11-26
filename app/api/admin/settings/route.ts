@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
-import { loadAllSettings, saveSettingsSection, DEFAULT_SETTINGS } from '@/lib/settings'
+import { loadAllSettings, saveSettingsSection } from '@/lib/settings'
+import { AdminSettings } from '@/components/admin/settings/types'
 import { z } from 'zod'
 
 // Schemas de validación server-side
@@ -29,7 +30,7 @@ const shippingSchema = z.object({
 })
 const policiesSchema = z.object({ terms: z.string(), privacy: z.string(), sustainabilityCommitment: z.string() })
 
-const sectionSchemas: Record<string, z.ZodSchema<any>> = {
+const sectionSchemas: Record<string, z.ZodSchema<unknown>> = {
   general: generalSchema,
   regenScore: regenScoreSchema,
   commissions: commissionsSchema,
@@ -75,7 +76,8 @@ export async function POST(request: NextRequest) {
     }
     // Guardar sección (upsert por claves)
     // Nota: prisma.platformSetting estará disponible tras migración.
-    await saveSettingsSection(section as any, parsed.data, (session as any).user.id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await saveSettingsSection(section as keyof AdminSettings, parsed.data as any)
     // Retornar nuevo snapshot
     const updated = await loadAllSettings()
     return NextResponse.json({ success: true, data: updated, updatedSection: section })

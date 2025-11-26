@@ -1,7 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Loader2 } from 'lucide-react'
@@ -21,7 +20,7 @@ export default function CategoriesSettingsSection() {
         const json = await res.json()
         if (json.success) setCategories(json.data)
         else setError('Error obteniendo categorías')
-      } catch (e) {
+      } catch {
         setError('Error de red')
       } finally {
         setLoading(false)

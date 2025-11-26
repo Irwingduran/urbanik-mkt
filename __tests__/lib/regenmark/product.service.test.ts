@@ -13,7 +13,11 @@ describe("computeProductRegenScore", () => {
   })
 
   it("handles missing values as zero", () => {
-    const { score } = computeProductRegenScore({} as any)
+    const { score } = computeProductRegenScore({} as unknown as {
+      co2Reduction: number
+      waterSaving: number
+      energyEfficiency: number
+    })
     expect(score).toBe(0)
   })
 

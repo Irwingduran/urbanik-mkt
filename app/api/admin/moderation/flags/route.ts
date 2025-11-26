@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { Prisma, FlagStatus, FlagType } from '@prisma/client'
 
 // GET /api/admin/moderation/flags - List all flags
 export async function GET(request: Request) {
@@ -38,9 +39,9 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit
 
     // Build filters
-    const where: any = {}
-    if (status) where.status = status
-    if (type && type !== 'ALL') where.type = type
+    const where: Prisma.ContentFlagWhereInput = {}
+    if (status) where.status = status as FlagStatus
+    if (type && type !== 'ALL') where.type = type as FlagType
 
     const [flags, total] = await Promise.all([
       prisma.contentFlag.findMany({

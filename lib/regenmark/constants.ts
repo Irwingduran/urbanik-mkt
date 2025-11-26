@@ -415,8 +415,8 @@ export function getRegenMarkTypeConfig(
  */
 export function getActiveRegenMarkTypes(): RegenMarkType[] {
   return Object.entries(REGENMARK_TYPES)
-    .filter(([_, config]) => config.weight > 0)
-    .map(([type, _]) => type as RegenMarkType)
+    .filter(([, config]) => config.weight > 0)
+    .map(([type]) => type as RegenMarkType)
 }
 
 /**

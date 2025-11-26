@@ -13,7 +13,7 @@ interface UIState {
   modal: {
     isOpen: boolean
     type: string | null
-    props: Record<string, any> | null
+    props: Record<string, unknown> | null
   }
 }
 
@@ -85,7 +85,7 @@ export const uiSlice = createSlice({
       state.notifications = []
     },
 
-    openModal: (state, action: PayloadAction<{ type: string; props?: Record<string, any> }>) => {
+    openModal: (state, action: PayloadAction<{ type: string; props?: Record<string, unknown> }>) => {
       state.modal.isOpen = true
       state.modal.type = action.payload.type
       state.modal.props = action.payload.props || null

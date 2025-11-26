@@ -162,10 +162,10 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate total quantity sold for top products
-    const topProductsWithSales = topProducts.map((product: any) => ({
+    const topProductsWithSales = topProducts.map((product) => ({
       ...product,
-      totalSold: product.orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
-    })).sort((a: any, b: any) => b.totalSold - a.totalSold)
+      totalSold: product.orderItems.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)
+    })).sort((a, b) => b.totalSold - a.totalSold)
 
     // Get vendor profile info
     const vendorInfo = await prisma.vendorProfile.findUnique({

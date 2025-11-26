@@ -13,8 +13,6 @@ import {
   Award,
   Plus,
   Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   Sparkles,
   TrendingUp,
@@ -58,7 +56,7 @@ interface VendorData {
 }
 
 export default function VendorRegenMarksPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const [vendorData, setVendorData] = useState<VendorData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -74,6 +72,7 @@ export default function VendorRegenMarksPage() {
     if (status === "authenticated") {
       fetchVendorData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   const fetchVendorData = async () => {
@@ -85,7 +84,7 @@ export default function VendorRegenMarksPage() {
       const data = await response.json()
       setVendorData(data)
     } catch (err) {
-      const e = err as any
+      const e = err as { body?: string; status?: number; message?: string; [key: string]: unknown }
       console.error("Error fetching vendor data:", e)
       // Try to parse body if available
       if (typeof e?.body === "string" && e.body.trim().startsWith("{")) {

@@ -43,7 +43,7 @@ export function ActivityFeed() {
       }
 
       const data = await response.json()
-      const typedActivities = data.data.map((activity: any) => ({
+      const typedActivities = (data.data as Array<Omit<Activity, 'timestamp'> & { timestamp: string }>).map((activity) => ({
         ...activity,
         timestamp: new Date(activity.timestamp),
       }))

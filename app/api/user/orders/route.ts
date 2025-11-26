@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
+import { createNotification } from '@/lib/notifications'
+import { Prisma, OrderStatus, Product } from '@prisma/client'
+
+interface OrderItemInput {
+  productId: string
+  quantity: number
+}
+
+interface EnrichedOrderItem extends OrderItemInput {
+  product: Product
+  price: number
+  total: number
+}
 
 // GET /api/user/orders - Get user's orders
 export async function GET(request: NextRequest) {
@@ -30,10 +43,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = { userId }
+    const where: Prisma.OrderWhereInput = { userId }
 
     if (status) {
-      where.status = status
+      where.status = status as OrderStatus
     }
 
     const [orders, totalCount] = await Promise.all([
@@ -155,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get products and validate availability
-    const productIds = items.map((item: any) => item.productId)
+    const productIds = items.map((item: { productId: string }) => item.productId)
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -176,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     // Check stock availability
     for (const item of items) {
-      const product = products.find((p: any) => p.id === item.productId)
+      const product = products.find((p) => p.id === item.productId)
       if (!product || product.stock < item.quantity) {
         return NextResponse.json(
           { error: `Insufficient stock for product: ${product?.name || 'Unknown'}` },
@@ -186,8 +199,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Group items by vendor (for multi-vendor support)
-    const itemsByVendor = items.reduce((acc: Record<string, any[]>, item: any) => {
-      const product = products.find((p: any) => p.id === item.productId)!
+    const itemsByVendor = items.reduce((acc: Record<string, EnrichedOrderItem[]>, item: OrderItemInput) => {
+      const product = products.find((p) => p.id === item.productId)!
       const vendorId = product.vendorUserId
 
       if (!acc[vendorId]) {
@@ -202,12 +215,12 @@ export async function POST(request: NextRequest) {
       })
 
       return acc
-    }, {} as Record<string, any[]>)
+    }, {} as Record<string, EnrichedOrderItem[]>)
 
     // Create orders (one per vendor)
     const createdOrders = await Promise.all(
-      Object.entries(itemsByVendor).map(async ([vendorId, vendorItems]) => {
-        const subtotal = (vendorItems as any[]).reduce((sum: number, item: any) => sum + item.total, 0)
+      (Object.entries(itemsByVendor) as [string, EnrichedOrderItem[]][]).map(async ([vendorId, vendorItems]) => {
+        const subtotal = vendorItems.reduce((sum: number, item) => sum + item.total, 0)
         const shipping = 10.00 // Fixed shipping for now
         const tax = subtotal * 0.10 // 10% tax
         const total = subtotal + shipping + tax
@@ -226,7 +239,7 @@ export async function POST(request: NextRequest) {
             paymentMethod: typeof paymentMethod === 'object' ? paymentMethod.type : String(paymentMethod),
             paymentStatus: "PENDING",
             items: {
-              create: (vendorItems as any[]).map((item: any) => ({
+              create: vendorItems.map((item) => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
@@ -251,7 +264,7 @@ export async function POST(request: NextRequest) {
 
         // Update product stock
         await Promise.all(
-          (vendorItems as any[]).map((item: any) =>
+          vendorItems.map((item) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -271,42 +284,49 @@ export async function POST(request: NextRequest) {
         })
 
         // Create notification for Vendor (New Order)
-        await prisma.notification.create({
-          data: {
-            userId: vendorId,
-            type: "ORDER_CREATED",
-            title: "¡Nueva Orden Recibida!",
-            message: `Has recibido una nueva orden #${order.id.slice(-8)} por $${total.toFixed(2)}`,
+        await createNotification({
+          userId: vendorId,
+          type: "ORDER_CREATED",
+          title: "¡Nueva Orden Recibida!",
+          message: `Has recibido una nueva orden #${order.id.slice(-8)} por $${total.toFixed(2)}`,
+          orderId: order.id,
+          actionUrl: `/dashboard/vendor/orders`,
+          metadata: {
             orderId: order.id,
-            actionUrl: `/dashboard/vendor/orders`
+            total: total,
+            recipientType: 'VENDOR'
           }
         })
 
         // Create notification for User (Order Confirmation)
-        await prisma.notification.create({
-          data: {
-            userId: session.user.id,
-            type: "ORDER_CREATED",
-            title: "Orden Confirmada",
-            message: `Tu orden #${order.id.slice(-8)} ha sido confirmada exitosamente.`,
+        await createNotification({
+          userId: session.user.id,
+          type: "ORDER_CREATED",
+          title: "Orden Confirmada",
+          message: `Tu orden #${order.id.slice(-8)} ha sido confirmada exitosamente.`,
+          orderId: order.id,
+          actionUrl: `/dashboard/user/orders/${order.id}`,
+          metadata: {
             orderId: order.id,
-            actionUrl: `/dashboard/user/orders/${order.id}`
+            total: total
           }
         })
 
         // Check for Low Stock and notify Vendor
         await Promise.all(
-          (vendorItems as any[]).map(async (item: any) => {
+          vendorItems.map(async (item) => {
             const currentStock = item.product.stock - item.quantity
             if (currentStock <= 5 && currentStock > 0) {
-               await prisma.notification.create({
-                data: {
-                  userId: vendorId,
-                  type: "STOCK_LOW",
-                  title: "Alerta de Stock Bajo",
-                  message: `El producto "${item.product.name}" tiene pocas unidades (${currentStock} restantes).`,
-                  productId: item.productId,
-                  actionUrl: `/dashboard/vendor/products/${item.productId}`
+               await createNotification({
+                userId: vendorId,
+                type: "STOCK_LOW",
+                title: "Alerta de Stock Bajo",
+                message: `El producto "${item.product.name}" tiene pocas unidades (${currentStock} restantes).`,
+                productId: item.productId,
+                actionUrl: `/dashboard/vendor/products/${item.productId}`,
+                metadata: {
+                  productName: item.product.name,
+                  currentStock: currentStock
                 }
               })
             }
@@ -318,8 +338,8 @@ export async function POST(request: NextRequest) {
     )
 
     // Update user profile with sustainability points
-    const totalRegenScore = items.reduce((sum: number, item: any) => {
-      const product = products.find((p: any) => p.id === item.productId)!
+    const totalRegenScore = items.reduce((sum: number, item: { productId: string, quantity: number }) => {
+      const product = products.find((p) => p.id === item.productId)!
       return sum + (product.regenScore * item.quantity)
     }, 0)
 

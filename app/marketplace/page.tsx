@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Grid3X3, List, X, Sparkles, Target, Users, Zap } from "lucide-react"
+import { Search, Grid3X3, List, X } from "lucide-react"
 import { ProductCard } from "@/components/marketplace/product-card"
 import { MarketplaceFilters } from "@/components/marketplace/marketplace-filters"
 import Header from "@/components/layout/header"
@@ -34,11 +34,43 @@ interface Product {
     energyEfficiency: number
   }
   certifications: string[]
+  materials?: string[]
   description: string
   stock: number
   maxOrderQuantity: number
 }
 
+interface ApiProduct {
+  id: string
+  name: string
+  vendorProfile?: {
+    companyName?: string
+    name?: string
+    location?: string
+  }
+  price: number
+  originalPrice?: number
+  averageRating: number
+  reviewCount: number
+  regenScore: number
+  images: string[]
+  category: string
+  stock: number
+  featured: boolean
+  nfts: unknown[]
+  co2Reduction: number
+  waterSaving: number
+  energyEfficiency: number
+  certifications: string[]
+  materials?: string[]
+  description: string
+  maxOrderQuantity: number
+}
+
+interface ApiCategory {
+  name: string
+  icon?: string
+}
 
 export default function Marketplace() {
   const searchParams = useSearchParams()
@@ -51,6 +83,7 @@ export default function Marketplace() {
   const [filters, setFilters] = useState({
     locations: [] as string[],
     certifications: [] as string[],
+    materials: [] as string[],
     priceRange: [0, 25000],
     minRegenScore: 0,
     inStockOnly: false,
@@ -60,21 +93,23 @@ export default function Marketplace() {
 
   // Initialize filters from URL params
   useEffect(() => {
-    const urlFilters = { ...filters }
+    setFilters(prev => {
+      const urlFilters = { ...prev }
 
-    if (searchParams?.get('featured') === 'true') {
-      urlFilters.featuredOnly = true
-    }
+      if (searchParams?.get('featured') === 'true') {
+        urlFilters.featuredOnly = true
+      }
 
-    if (searchParams?.get('sale') === 'true') {
-      // Handle sale filter - could add a separate sale filter or use existing logic
-    }
+      if (searchParams?.get('sale') === 'true') {
+        // Handle sale filter - could add a separate sale filter or use existing logic
+      }
 
-    if (searchParams?.get('category')) {
-      urlFilters.categories = [searchParams.get('category')!]
-    }
+      if (searchParams?.get('category')) {
+        urlFilters.categories = [searchParams.get('category')!]
+      }
 
-    setFilters(urlFilters)
+      return urlFilters
+    })
   }, [searchParams])
 
   // Fetch products from API
@@ -86,6 +121,27 @@ export default function Marketplace() {
 
         if (searchTerm) params.append('search', searchTerm)
         if (filters.featuredOnly) params.append('featured', 'true')
+        
+        // Add new filters to API params
+        if (filters.minRegenScore > 0) {
+          params.append('minRegenScore', filters.minRegenScore.toString())
+        }
+
+        if (filters.certifications.length > 0) {
+          params.append('certifications', filters.certifications.join(','))
+        }
+
+        if (filters.materials.length > 0) {
+          params.append('materials', filters.materials.join(','))
+        }
+
+        if (filters.locations.length > 0) {
+          // Map locations to origin
+          // Note: In a real app, you might want to be more specific or have a separate origin filter
+          // For now, we'll assume location filter maps to origin search
+          params.append('origin', filters.locations.join(','))
+        }
+
         if (filters.categories.length > 0) {
           filters.categories.forEach(cat => params.append('category', cat))
         }
@@ -95,7 +151,7 @@ export default function Marketplace() {
 
         if (data.success) {
           // Transform API data to match frontend interface
-          const transformedProducts: Product[] = data.data.map((product: any) => ({
+          const transformedProducts: Product[] = data.data.map((product: ApiProduct) => ({
             id: product.id,
             name: product.name,
             vendor: product.vendorProfile?.companyName || product.vendorProfile?.name || 'Vendor',
@@ -117,6 +173,7 @@ export default function Marketplace() {
               energyEfficiency: product.energyEfficiency,
             },
             certifications: product.certifications,
+            materials: product.materials,
             description: product.description,
             stock: product.stock,
             maxOrderQuantity: product.maxOrderQuantity
@@ -134,7 +191,7 @@ export default function Marketplace() {
     }
 
     fetchProducts()
-  }, [searchTerm, filters.featuredOnly, filters.categories])
+  }, [searchTerm, filters])
 
   // Fetch categories
   useEffect(() => {
@@ -153,7 +210,7 @@ export default function Marketplace() {
             'Calidad del Aire': { icon: '🌬️', color: 'from-cyan-500 to-blue-500' }
           }
 
-          const transformedCategories = data.data.map((cat: any) => ({
+          const transformedCategories = data.data.map((cat: ApiCategory) => ({
             name: cat.name,
             icon: categoryMap[cat.name]?.icon || cat.icon || '🌱',
             color: categoryMap[cat.name]?.color || 'from-green-500 to-green-600'
@@ -194,6 +251,15 @@ export default function Marketplace() {
         return false
       }
 
+      // Materials filter
+      if (
+        filters.materials.length > 0 &&
+        product.materials &&
+        !filters.materials.some((mat) => product.materials?.includes(mat))
+      ) {
+        return false
+      }
+
       // Price range filter
       if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
         return false
@@ -226,6 +292,7 @@ export default function Marketplace() {
   const activeFiltersCount =
     filters.locations.length +
     filters.certifications.length +
+    filters.materials.length +
     filters.categories.length +
     (filters.priceRange[0] > 0 || filters.priceRange[1] < 25000 ? 1 : 0) +
     (filters.minRegenScore > 0 ? 1 : 0) +
@@ -236,6 +303,7 @@ export default function Marketplace() {
     setFilters({
       locations: [],
       certifications: [],
+      materials: [],
       priceRange: [0, 25000],
       minRegenScore: 0,
       inStockOnly: false,
@@ -244,15 +312,6 @@ export default function Marketplace() {
     })
     setSearchTerm("")
   }
-
-  // NUEVO: Cálculo de impacto en tiempo real
-  const realTimeImpact = useMemo(() => {
-    return filteredProducts.reduce((acc, product) => ({
-      co2Reduced: acc.co2Reduced + (product.metrics?.co2Reduced || 0),
-      waterSaved: acc.waterSaved + (product.metrics?.waterSaved || 0),
-      energyEfficiency: acc.energyEfficiency + (product.metrics?.energyEfficiency || 0),
-    }), { co2Reduced: 0, waterSaved: 0, energyEfficiency: 0 })
-  }, [filteredProducts])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30">
@@ -383,6 +442,23 @@ export default function Marketplace() {
                   </Badge>
                 ))}
 
+                {filters.materials.map((mat) => (
+                  <Badge key={mat} className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 rounded-full px-3 py-1">
+                    <span>🌿 {mat}</span>
+                    <button
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          materials: prev.materials.filter((m) => m !== mat),
+                        }))
+                      }
+                      className="ml-2 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+
                 {filters.categories.map((category) => (
                   <Badge key={category} className="bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 rounded-full px-3 py-1">
                     <span>{category}</span>
@@ -431,7 +507,7 @@ export default function Marketplace() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     {searchTerm ? (
-                      <span>Results for "{searchTerm}" • Transforming the planet</span>
+                      <span>Results for &quot;{searchTerm}&quot; • Transforming the planet</span>
                     ) : (
                       <span>Curated eco-friendly solutions • Making impact accessible</span>
                     )}
@@ -495,7 +571,7 @@ export default function Marketplace() {
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">No products found</h3>
                   <p className="text-gray-600 mb-8 leading-relaxed">
-                    Don't worry! Try adjusting your filters or search terms to discover amazing sustainable products.
+                    Don&apos;t worry! Try adjusting your filters or search terms to discover amazing sustainable products.
                   </p>
                   <Button
                     onClick={clearAllFilters}

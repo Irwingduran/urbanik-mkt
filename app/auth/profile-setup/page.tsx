@@ -112,7 +112,7 @@ export default function ProfileSetupPage() {
       } else {
         setError(data.error || 'Failed to update profile')
       }
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -168,7 +168,7 @@ export default function ProfileSetupPage() {
               <User className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Urbanika Marketplace!</h1>
-            <p className="text-gray-600">Let's set up your profile to get personalized recommendations</p>
+            <p className="text-gray-600">Let&apos;s set up your profile to get personalized recommendations</p>
           </div>
         )}
 

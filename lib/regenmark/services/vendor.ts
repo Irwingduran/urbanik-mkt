@@ -9,7 +9,7 @@ export interface VendorRegenInput {
   vendorUserId: string
   marks: {
     type: RegenMarkType
-    metrics: Record<string, any>
+    metrics: Record<string, unknown>
   }[]
 }
 

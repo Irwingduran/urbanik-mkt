@@ -3,6 +3,19 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "@/lib/prisma"
 import { stripe } from "@/lib/stripe"
+import { createNotification } from '@/lib/notifications'
+import { Prisma } from "@prisma/client"
+
+interface OrderItemInput {
+  productId: string
+  quantity: number
+}
+
+interface EnrichedItem extends OrderItemInput {
+  product: Prisma.ProductGetPayload<{ include: { vendorProfile: true } }>
+  price: number
+  total: number
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,9 +32,7 @@ export async function POST(request: NextRequest) {
     const {
       items, // [{ productId, quantity }]
       shippingAddress,
-      billingAddress,
-      paymentMethod,
-      useShippingAsBilling = true
+      paymentMethod
     } = body
 
     // Validation
@@ -40,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get products and validate availability
-    const productIds = items.map((item: any) => item.productId)
+    const productIds = items.map((item: { productId: string }) => item.productId)
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Check stock availability
     for (const item of items) {
-      const product = products.find((p: any) => p.id === item.productId)
+      const product = products.find((p) => p.id === item.productId)
       if (!product || product.stock < item.quantity) {
         return NextResponse.json(
           { error: `Insufficient stock for product: ${product?.name || 'Unknown'}` },
@@ -71,8 +82,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Group items by vendor (for multi-vendor support)
-    const itemsByVendor = items.reduce((acc: any, item: any) => {
-      const product = products.find((p: any) => p.id === item.productId)!
+    const itemsByVendor = items.reduce((acc: Record<string, EnrichedItem[]>, item: OrderItemInput) => {
+      const product = products.find((p) => p.id === item.productId)!
       const vendorId = product.vendorUserId
 
       if (!acc[vendorId]) {
@@ -87,11 +98,11 @@ export async function POST(request: NextRequest) {
       })
 
       return acc
-    }, {} as Record<string, any[]>)
+    }, {} as Record<string, EnrichedItem[]>)
 
     // Calculate totals
-    const grandSubtotal = items.reduce((sum: number, item: any) => {
-      const product = products.find((p: any) => p.id === item.productId)!
+    const grandSubtotal = items.reduce((sum: number, item: OrderItemInput) => {
+      const product = products.find((p) => p.id === item.productId)!
       return sum + (product.price * item.quantity)
     }, 0)
 
@@ -119,8 +130,8 @@ export async function POST(request: NextRequest) {
 
     // Create orders (one per vendor) but with PENDING status
     const createdOrders = await Promise.all(
-      Object.entries(itemsByVendor).map(async ([vendorId, vendorItems]) => {
-        const subtotal = (vendorItems as any[]).reduce((sum: number, item: any) => sum + item.total, 0)
+      (Object.entries(itemsByVendor) as [string, EnrichedItem[]][]).map(async ([vendorId, vendorItems]) => {
+        const subtotal = vendorItems.reduce((sum: number, item: EnrichedItem) => sum + item.total, 0)
         const shipping = grandSubtotal > 500 ? 0 : Math.round(99 * (subtotal / grandSubtotal)) // Proportional shipping
         const tax = subtotal * 0.16
         const total = subtotal + shipping + tax
@@ -140,7 +151,7 @@ export async function POST(request: NextRequest) {
             paymentStatus: "PENDING",
             stripePaymentId: paymentIntent.id,
             items: {
-              create: (vendorItems as any[]).map((item: any) => ({
+              create: vendorItems.map((item: EnrichedItem) => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
@@ -171,7 +182,7 @@ export async function POST(request: NextRequest) {
 
         // Reserve stock (decrement temporarily)
         await Promise.all(
-          (vendorItems as any[]).map((item: any) =>
+          vendorItems.map((item: EnrichedItem) =>
             prisma.product.update({
               where: { id: item.productId },
               data: {
@@ -188,15 +199,18 @@ export async function POST(request: NextRequest) {
 
     // Create initial notifications (payment pending)
     await Promise.all(
-      createdOrders.map((order: any) =>
-        prisma.notification.create({
-          data: {
-            userId: session.user.id,
+      createdOrders.map((order) =>
+        createNotification({
+          userId: session.user.id,
+          orderId: order.id,
+          type: "ORDER_CREATED",
+          title: "Pedido Creado",
+          message: "Tu pedido ha sido creado y está pendiente de pago.",
+          actionUrl: `/orders/${order.id}`,
+          metadata: {
             orderId: order.id,
-            type: "ORDER_CREATED",
-            title: "Pedido Creado",
-            message: "Tu pedido ha sido creado y está pendiente de pago.",
-            actionUrl: `/orders/${order.id}`
+            total: order.total,
+            items: order.items
           }
         })
       )

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,8 +10,12 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured')
     const sale = searchParams.get('sale')
     const limit = searchParams.get('limit')
+    const minRegenScore = searchParams.get('minRegenScore')
+    const certifications = searchParams.get('certifications')
+    const materials = searchParams.get('materials')
+    const origin = searchParams.get('origin')
 
-    let whereClause: any = {
+    const whereClause: Prisma.ProductWhereInput = {
       active: true,
       stock: {
         gt: 0
@@ -46,6 +51,34 @@ export async function GET(request: NextRequest) {
     if (sale === 'true') {
       whereClause.originalPrice = {
         not: null
+      }
+    }
+
+    // Advanced Search Filters
+    if (minRegenScore) {
+      whereClause.regenScore = {
+        gte: parseInt(minRegenScore)
+      }
+    }
+
+    if (certifications) {
+      const certList = certifications.split(',').map(c => c.trim())
+      whereClause.certifications = {
+        hasSome: certList
+      }
+    }
+
+    if (materials) {
+      const materialList = materials.split(',').map(m => m.trim())
+      whereClause.materials = {
+        hasSome: materialList
+      }
+    }
+
+    if (origin) {
+      whereClause.origin = {
+        contains: origin,
+        mode: 'insensitive'
       }
     }
 

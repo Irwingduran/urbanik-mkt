@@ -34,8 +34,9 @@ export default function SettingsLayout({ initialSettings }: Props) {
       }
       // Reemplazar estado con snapshot actualizado
       setSettings(json.data)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Error desconocido'
+      setError(message)
     } finally {
       setSavingSection(null)
     }

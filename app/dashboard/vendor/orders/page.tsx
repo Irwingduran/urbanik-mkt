@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
@@ -15,11 +15,9 @@ import {
   MoreHorizontal,
   Calendar,
   TrendingUp,
-  Users,
   DollarSign,
   AlertCircle,
   RotateCcw,
-  Plus,
   Download
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -27,9 +25,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { VendorDashboardLayout } from '@/components/shared/layout/VendorDashboardLayout'
@@ -128,15 +125,7 @@ export default function VendorOrdersPage() {
   const [estimatedDelivery, setEstimatedDelivery] = useState('')
   const [cancelReason, setCancelReason] = useState('')
 
-  useEffect(() => {
-    if (session?.user.roles?.includes('VENDOR') || session?.user.role === 'VENDOR') {
-      fetchOrders()
-    } else if (session?.user.role) {
-      router.push('/dashboard')
-    }
-  }, [session, currentPage, statusFilter, timeRange])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -166,9 +155,17 @@ export default function VendorOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, timeRange, statusFilter])
 
-  const handleOrderAction = async (orderId: string, action: string, data: any = {}) => {
+  useEffect(() => {
+    if (session?.user.roles?.includes('VENDOR') || session?.user.role === 'VENDOR') {
+      fetchOrders()
+    } else if (session?.user.role) {
+      router.push('/dashboard')
+    }
+  }, [session, fetchOrders, router])
+
+  const handleOrderAction = async (orderId: string, action: string, data: Record<string, unknown> = {}) => {
     try {
       setActionLoading(true)
       const response = await fetch('/api/vendor/orders', {
